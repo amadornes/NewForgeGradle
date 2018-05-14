@@ -1,0 +1,26 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.3'
+    }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
+apply plugin: 'idea'
+
+repositories {
+    maven {
+        name = 'forge'
+        url = 'http://files.minecraftforge.net/maven'
+    }
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+    compile gradleApi()
+    shadow 'net.md-5:SpecialSource:1.8.2'
+}
