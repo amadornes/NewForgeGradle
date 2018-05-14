@@ -7,7 +7,8 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.Util;
+import net.minecraftforge.gradle.util.Remapper;
+import net.minecraftforge.gradle.util.Util;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
@@ -46,24 +47,15 @@ public class RemapJarTask extends SpecialSourceTask {
 
     @Override
     protected JarRemapper createRemapper(Jar inputJar, @Nullable FileCollection classpath) throws IOException {
-        // Create mapping object
-        JarMapping mapping = new JarMapping();
-
-        // Load mappings
-        for (File file : mappings) {
-            mapping.loadMappings(file);
-        }
-
-        // Allow inheritance from other classes in the jar as well as the classpath
-        JointProvider inheritanceProviders = new JointProvider();
-        inheritanceProviders.add(new JarProvider(inputJar));
+        // Create an inheritance provider that contains the input jar + other elements in the classpath
+        JointProvider inheritanceProvider = new JointProvider();
+        inheritanceProvider.add(new JarProvider(inputJar));
         if (classpath != null) {
-            inheritanceProviders.add(new ClassLoaderProvider(new URLClassLoader(Util.toURLs(classpath))));
+            inheritanceProvider.add(new ClassLoaderProvider(new URLClassLoader(Util.toURLs(classpath))));
         }
-        mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
         // Create the remapper
-        return new JarRemapper(null, mapping);
+        return Remapper.createRemapper(mappings, inheritanceProvider);
     }
 
     public void mappings(FileCollection files) {
@@ -76,10 +68,6 @@ public class RemapJarTask extends SpecialSourceTask {
 
     public void mappings(String... files) {
         mappings(getProject().files((Object[]) files));
-    }
-
-    public void mappings(String mappings) {
-
     }
 
     public void remapWhen(BooleanSupplier condition) {
