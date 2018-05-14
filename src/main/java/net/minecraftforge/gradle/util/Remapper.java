@@ -38,7 +38,7 @@ public class Remapper {
     /**
      *
      */
-    private static Object resolveDeobf(Project project, Dependency dependency) {
+    public static Object resolveDeobf(Project project, Dependency dependency) {
         // Resolve the requested dependency TODO: do lazily inside the returned FileCollection
         Set<File> files = Util.resolveDependency(project, dependency);
 
