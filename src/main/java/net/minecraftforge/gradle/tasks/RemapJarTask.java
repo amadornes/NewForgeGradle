@@ -2,12 +2,11 @@ package net.minecraftforge.gradle.tasks;
 
 import com.google.common.base.Preconditions;
 import net.md_5.specialsource.Jar;
-import net.md_5.specialsource.JarMapping;
 import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.ClassLoaderProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.util.Remapper;
+import net.minecraftforge.gradle.mappings.Remapper;
 import net.minecraftforge.gradle.util.Util;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;

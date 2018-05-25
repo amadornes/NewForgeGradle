@@ -17,7 +17,8 @@ public class ForgeGradleExtension {
     public boolean reobfuscateJar = true;
 
     @Inject
-    public ForgeGradleExtension(Project project, ObjectFactory factory) {
+    public ForgeGradleExtension(Project project) {
+        ObjectFactory factory = project.getObjects();
         minecraft = factory.newInstance(Minecraft.class);
         forge = factory.newInstance(Forge.class);
         mappings = factory.newInstance(Mappings.class);
