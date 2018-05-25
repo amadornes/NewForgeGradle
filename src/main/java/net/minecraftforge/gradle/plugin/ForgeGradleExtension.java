@@ -14,7 +14,7 @@ public class ForgeGradleExtension {
     public final Minecraft minecraft;
     public final Forge forge;
     public final Mappings mappings;
-    public boolean reobfuscateJar = true;
+    public final Builtin builtin;
 
     @Inject
     public ForgeGradleExtension(Project project) {
@@ -22,6 +22,7 @@ public class ForgeGradleExtension {
         minecraft = factory.newInstance(Minecraft.class);
         forge = factory.newInstance(Forge.class);
         mappings = factory.newInstance(Mappings.class);
+        builtin = factory.newInstance(Builtin.class);
     }
 
     void minecraft(Action<? super Minecraft> action) {
@@ -36,6 +37,10 @@ public class ForgeGradleExtension {
         action.execute(mappings);
     }
 
+    void builtin(Action<? super Builtin> action) {
+        action.execute(builtin);
+    }
+
     public static class Minecraft {
         public String version;
     }
@@ -46,6 +51,16 @@ public class ForgeGradleExtension {
 
     public static class Mappings {
         public String version;
+    }
+
+    public static class Builtin {
+
+        public boolean mcpMappings = true;
+
+        public void disableAll() {
+            mcpMappings = false;
+        }
+
     }
 
 }

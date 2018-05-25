@@ -1,24 +1,24 @@
 package net.minecraftforge.gradle.plugin;
 
 import net.minecraftforge.gradle.api.MappingProvider;
+import net.minecraftforge.gradle.mappings.MappingManager;
 
 import javax.inject.Inject;
-import java.util.Map;
 
 /**
  * Extension that allows users to register their own mapping providers.
  */
 public class MappingsExtension {
 
-    private final Map<String, MappingProvider> providers;
+    private final MappingManager manager;
 
     @Inject
-    public MappingsExtension(Map<String, MappingProvider> providers) {
-        this.providers = providers;
+    public MappingsExtension(MappingManager manager) {
+        this.manager = manager;
     }
 
-    public void add(String name, MappingProvider provider) {
-        providers.put(name, provider);
+    public void register(String name, MappingProvider provider) {
+        manager.register(name, provider);
     }
 
 }
