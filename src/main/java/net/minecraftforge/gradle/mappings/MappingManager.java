@@ -4,27 +4,31 @@ import net.minecraftforge.gradle.Constants;
 import net.minecraftforge.gradle.api.MappingEntry;
 import net.minecraftforge.gradle.api.MappingProvider;
 import net.minecraftforge.gradle.api.MappingVersion;
+import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance;
 import net.minecraftforge.gradle.util.Util;
-import org.gradle.api.Project;
+import org.gradle.internal.impldep.org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class MappingManager {
 
-    private final Project project;
+    private final ForgeGradlePluginInstance fg;
     private final Map<String, MappingProvider> mappingProviders = new HashMap<>();
 
-    public MappingManager(Project project) {
-        this.project = project;
-        // After the project has been evaluated, add all repos
-        project.afterEvaluate($ -> {
-            for (MappingProvider provider : mappingProviders.values()) {
-                provider.addDependencyRepositories(project.getRepositories());
-            }
-        });
+    public MappingManager(ForgeGradlePluginInstance fg) {
+        this.fg = fg;
+    }
+
+    public void addRepositories() {
+        for (MappingProvider provider : mappingProviders.values()) {
+            provider.addDependencyRepositories(fg.project.getRepositories());
+        }
     }
 
     /**
@@ -45,15 +49,24 @@ public class MappingManager {
             throw new IllegalArgumentException("Could not find requested mapping provider \"" + version.getProvider() + "\".");
         }
 
-        File gradleHome = project.getGradle().getGradleUserHomeDir();
-        File mappingsDir = new File(gradleHome, Constants.CACHE_GENERATED_MAPPINGS_DIR + "/" + version.getProvider());
-        File versionDir = new File(mappingsDir, version.getMCVersion() + "-" + version.getChannel() + "_" + version.getVersion());
-        File file = new File(versionDir, version.getMapping() + ".srg");
+        Set<String> supported = provider.getSupportedMappings();
+        String mapping = null;
+        for (String s : supported) {
+            if (s.equals(version.getMapping())) {
+                mapping = s;
+                break;
+            }
+        }
+        if (mapping == null) {
+            throw new IllegalArgumentException("Unsupported mapping type \"" + version.getMapping() + "\".");
+        }
 
-        if (!file.exists() || project.getGradle().getStartParameter().isRefreshDependencies()) {
+        File file = getMappingPath(version);
+
+        if (!file.exists() || fg.project.getGradle().getStartParameter().isRefreshDependencies()) {
             Map<Object, Object> dependencies = provider.getDependencies(version);
             Map<MappingEntry, MappingEntry> mappings = provider.getMapping(version,
-                    name -> Util.resolveDependency(project, dependencies.get(name)).iterator().next());
+                    name -> Util.resolveDependency(fg.project, dependencies.get(name)).iterator().next());
 
             try {
                 if (file.exists()) file.delete();
@@ -70,6 +83,30 @@ public class MappingManager {
         }
 
         return file;
+    }
+
+    /**
+     * Gets the hash of the mappings file for the specified provider and version.
+     * <p>
+     * Automatically handles refreshing dependencies.
+     */
+    public String getMappingHash(MappingVersion version) {
+        try {
+            File mapping = getMapping(version);
+            FileInputStream fis = new FileInputStream(mapping);
+            String md5 = DigestUtils.md5Hex(fis);
+            fis.close();
+            return md5;
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private File getMappingPath(MappingVersion version) {
+        File gradleHome = fg.project.getGradle().getGradleUserHomeDir();
+        File mappingsDir = new File(gradleHome, Constants.CACHE_GENERATED_MAPPINGS_DIR + "/" + version.getProvider());
+        File versionDir = new File(mappingsDir, version.getMCVersion() + "-" + version.getChannel() + "_" + version.getVersion());
+        return new File(versionDir, version.getMapping() + ".srg");
     }
 
     /**

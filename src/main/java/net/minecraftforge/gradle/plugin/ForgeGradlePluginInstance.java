@@ -12,23 +12,23 @@ import static net.minecraftforge.gradle.Constants.*;
  */
 public class ForgeGradlePluginInstance {
 
-    private final Project project;
+    public final Project project;
 
     // Internal systems
-    private final MappingManager mappings;
+    public final MappingManager mappings;
 
     // Extensions
-    private ForgeGradleExtension fgExt;
+    public ForgeGradleExtension fgExt;
 
     ForgeGradlePluginInstance(Project project) {
         this.project = project;
 
-        this.mappings = new MappingManager(project);
+        this.mappings = new MappingManager(this);
     }
 
     public void init() {
         // Add a deobf() method to the dependencies block
-        Remapper.addDeobfMethod(project);
+        Remapper.addDeobfMethod(this);
     }
 
     public void initExtensions() {
@@ -37,9 +37,10 @@ public class ForgeGradlePluginInstance {
     }
 
     public void afterEvaluate() {
-        if(fgExt.builtin.mcpMappings) {
+        if (fgExt.builtin.mcpMappings) {
             mappings.register("mcp", new MCPMappingProvider());
         }
+        mappings.addRepositories();
     }
 
 }
