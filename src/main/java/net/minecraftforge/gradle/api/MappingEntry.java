@@ -23,9 +23,9 @@ public class MappingEntry {
     }
 
     public static Field forFullyQualifiedField(String fqname) {
-        String[] split = fqname.split("\\/");
-        String name = split[split.length - 1];
-        String owner = name.substring(0, fqname.length() - name.length() - 1);
+        int index = fqname.lastIndexOf('/');
+        String owner = fqname.substring(0, index);
+        String name = fqname.substring(index + 1);
         return forField(owner, name);
     }
 
@@ -34,9 +34,9 @@ public class MappingEntry {
     }
 
     public static Method forFullyQualifiedMethod(String fqname, String descriptor) {
-        String[] split = fqname.split("\\/");
-        String name = split[split.length - 1];
-        String owner = name.substring(0, fqname.length() - name.length() - 1);
+        int index = fqname.lastIndexOf('/');
+        String owner = fqname.substring(0, index);
+        String name = fqname.substring(index + 1);
         return forMethod(owner, name, descriptor);
     }
 
