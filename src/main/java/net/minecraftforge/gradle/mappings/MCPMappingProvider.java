@@ -148,27 +148,27 @@ public class MCPMappingProvider implements MappingProvider {
                 String[] split = line.split(" ");
                 switch (split[0]) {
                     case "PK:": {
-                        notchSrgPackages.put(new MappingEntry.Package(split[1]), new MappingEntry.Package(split[2]));
+                        notchSrgPackages.put(MappingEntry.forPackage(split[1]), MappingEntry.forPackage(split[2]));
                         break;
                     }
                     case "CL:": {
-                        notchSrgClasses.put(new MappingEntry.Class(split[1]), new MappingEntry.Class(split[2]));
+                        notchSrgClasses.put(MappingEntry.forClass(split[1]), MappingEntry.forClass(split[2]));
                         break;
                     }
                     case "FD:": {
-                        MappingEntry.Field mapping = new MappingEntry.Field(split[2]);
+                        MappingEntry.Field mapping = MappingEntry.forFullyQualifiedField(split[2]);
                         String srgName = fieldMappings.get(mapping.getName());
                         if (srgName == null) srgName = mapping.getName();
-                        notchSrgFields.put(new MappingEntry.Field(split[1]), mapping);
-                        srgMCPFields.put(mapping, new MappingEntry.Field(mapping.getOwner(), srgName));
+                        notchSrgFields.put(MappingEntry.forFullyQualifiedField(split[1]), mapping);
+                        srgMCPFields.put(mapping, MappingEntry.forField(mapping.getOwner(), srgName));
                         break;
                     }
                     case "MD:": {
-                        MappingEntry.Method mapping = new MappingEntry.Method(split[3], split[4]);
+                        MappingEntry.Method mapping = MappingEntry.forFullyQualifiedMethod(split[3], split[4]);
                         String srgName = methodMappings.get(mapping.getName());
                         if (srgName == null) srgName = mapping.getName();
-                        notchSrgMethods.put(new MappingEntry.Method(split[1], split[2]), mapping);
-                        srgMCPMethods.put(mapping, new MappingEntry.Method(mapping.getOwner(), srgName, mapping.getDescriptor()));
+                        notchSrgMethods.put(MappingEntry.forFullyQualifiedMethod(split[1], split[2]), mapping);
+                        srgMCPMethods.put(mapping, MappingEntry.forMethod(mapping.getOwner(), srgName, mapping.getDescriptor()));
                         break;
                     }
                 }

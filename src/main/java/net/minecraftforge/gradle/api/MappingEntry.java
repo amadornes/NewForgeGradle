@@ -10,13 +10,40 @@ package net.minecraftforge.gradle.api;
  */
 public class MappingEntry {
 
-    protected String name;
+    public static Package forPackage(String name) {
+        return new Package(name);
+    }
+
+    public static Class forClass(String name) {
+        return new Class(name);
+    }
+
+    public static Field forField(String owner, String name) {
+        return new Field(owner, name);
+    }
+
+    public static Field forFullyQualifiedField(String fqname) {
+        String[] split = fqname.split("\\/");
+        String name = split[split.length - 1];
+        String owner = name.substring(0, fqname.length() - name.length() - 1);
+        return forField(owner, name);
+    }
+
+    public static Method forMethod(String owner, String name, String descriptor) {
+        return new Method(owner, name, descriptor);
+    }
+
+    public static Method forFullyQualifiedMethod(String fqname, String descriptor) {
+        String[] split = fqname.split("\\/");
+        String name = split[split.length - 1];
+        String owner = name.substring(0, fqname.length() - name.length() - 1);
+        return forMethod(owner, name, descriptor);
+    }
+
+    private final String name;
 
     private MappingEntry(String name) {
         this.name = name;
-    }
-
-    private MappingEntry() {
     }
 
     public String getName() {
@@ -29,7 +56,7 @@ public class MappingEntry {
      * @see MappingEntry
      */
     public static final class Package extends MappingEntry {
-        public Package(String name) {
+        private Package(String name) {
             super(name);
         }
     }
@@ -40,7 +67,7 @@ public class MappingEntry {
      * @see MappingEntry
      */
     public static final class Class extends MappingEntry {
-        public Class(String name) {
+        private Class(String name) {
             super(name);
         }
     }
@@ -54,15 +81,9 @@ public class MappingEntry {
 
         private final String owner;
 
-        public Field(String owner, String name) {
+        private Field(String owner, String name) {
             super(name);
             this.owner = owner;
-        }
-
-        public Field(String name) {
-            String[] split = name.split("\\/");
-            this.name = split[split.length - 1];
-            this.owner = name.substring(0, name.length() - this.name.length() - 1);
         }
 
         public String getOwner() {
@@ -80,16 +101,9 @@ public class MappingEntry {
 
         private final String owner, desc;
 
-        public Method(String owner, String name, String desc) {
+        private Method(String owner, String name, String desc) {
             super(name);
             this.owner = owner;
-            this.desc = desc;
-        }
-
-        public Method(String name, String desc) {
-            String[] split = name.split("\\/");
-            this.name = split[split.length - 1];
-            this.owner = name.substring(0, name.length() - this.name.length() - 1);
             this.desc = desc;
         }
 
