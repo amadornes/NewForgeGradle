@@ -3,6 +3,7 @@ package net.minecraftforge.gradle.tasks;
 import com.google.common.base.Preconditions;
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarRemapper;
+import net.minecraftforge.gradle.util.Util;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.InputFile;
@@ -11,6 +12,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Task that takes a jar, applies SpecialSource to it, and outputs another jar.<br/>
@@ -32,7 +34,7 @@ public abstract class SpecialSourceTask extends DefaultTask {
     protected void validate() {
     }
 
-    protected abstract JarRemapper createRemapper(Jar inputJar, @Nullable FileCollection classpath) throws Exception;
+    protected abstract JarRemapper createRemapper(Jar inputJar, @Nullable FileCollection classpath) throws IOException;
 
     @TaskAction
     public final void remap() throws Exception {
@@ -42,12 +44,7 @@ public abstract class SpecialSourceTask extends DefaultTask {
 
         getProject().delete(output);
 
-        // Load the input jar
-        Jar inputJar = Jar.init(input);
-        // Create a remapper
-        JarRemapper remapper = createRemapper(inputJar, null);
-        // Remap
-        remapper.remapJar(inputJar, output);
+        Util.applySpecialSource(input, output, jar -> createRemapper(jar, null));
     }
 
     public void input(File input) {

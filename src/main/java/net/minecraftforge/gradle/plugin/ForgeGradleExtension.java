@@ -5,6 +5,7 @@ import org.gradle.api.Project;
 import org.gradle.api.model.ObjectFactory;
 
 import javax.inject.Inject;
+import java.util.Map;
 
 /**
  * Makes variables available to buildscripts.
@@ -37,6 +38,16 @@ public class ForgeGradleExtension {
         action.execute(mappings);
     }
 
+    void mappings(Map<String, String> map) {
+        if (map.containsKey("provider")) mappings.provider = map.get("provider");
+        if (map.containsKey("channel")) mappings.channel = map.get("channel");
+        if (map.containsKey("version")) mappings.version = map.get("version");
+        if (map.containsKey("mcMappings")) mappings.mcMappings = map.get("mcMappings");
+        if (map.containsKey("forgeMappings")) mappings.forgeMappings = map.get("forgeMappings");
+        if (map.containsKey("deobfMappings")) mappings.deobfMappings = map.get("deobfMappings");
+        if (map.containsKey("obfMappings")) mappings.obfMappings = map.get("obfMappings");
+    }
+
     void builtin(Action<? super Builtin> action) {
         action.execute(builtin);
     }
@@ -50,7 +61,14 @@ public class ForgeGradleExtension {
     }
 
     public static class Mappings {
+        public String provider = "mcp";
+        public String channel;
         public String version;
+
+        public String mcMappings = "notch-mcp";
+        public String forgeMappings = "notch-mcp";
+        public String deobfMappings = "srg-mcp";
+        public String obfMappings = "mcp-srg";
     }
 
     public static class Builtin {

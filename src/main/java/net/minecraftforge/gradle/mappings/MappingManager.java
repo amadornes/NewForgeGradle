@@ -66,7 +66,7 @@ public class MappingManager {
         if (!file.exists() || fg.project.getGradle().getStartParameter().isRefreshDependencies()) {
             Map<Object, Object> dependencies = provider.getDependencies(version);
             Map<MappingEntry, MappingEntry> mappings = provider.getMapping(version,
-                    name -> Util.resolveDependency(fg.project, dependencies.get(name)).iterator().next());
+                    name -> Util.resolveDependency(fg, dependencies.get(name)).iterator().next());
 
             try {
                 if (file.exists()) file.delete();

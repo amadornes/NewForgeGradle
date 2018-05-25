@@ -20,6 +20,9 @@ public class ForgeGradlePluginInstance {
     // Extensions
     public ForgeGradleExtension fgExt;
 
+    // Miscellaneous
+    public int dependencyID = 0; // Stores the current dependency ID
+
     ForgeGradlePluginInstance(Project project) {
         this.project = project;
 

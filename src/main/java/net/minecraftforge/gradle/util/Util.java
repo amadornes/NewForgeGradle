@@ -5,9 +5,11 @@ import groovy.lang.Closure;
 import groovy.lang.ExpandoMetaClass;
 import groovy.lang.GroovyObject;
 import groovy.lang.MetaClass;
+import net.md_5.specialsource.Jar;
+import net.md_5.specialsource.JarRemapper;
+import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance;
 import org.codehaus.groovy.reflection.CachedMethod;
 import org.codehaus.groovy.runtime.metaclass.ClosureMetaMethod;
-import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.FileCollection;
@@ -74,11 +76,13 @@ public class Util {
      * Resolves a dependency, downloading the file and its transitives
      * if not cached and returns the set of files.
      */
-    public static Set<File> resolveDependency(Project project, Dependency dependency) {
-        Configuration cfg = project.getConfigurations().maybeCreate("tmp");
+    public static Set<File> resolveDependency(ForgeGradlePluginInstance fg, Dependency dependency) {
+        Configuration cfg = fg.project.getConfigurations().maybeCreate("resolve_dep_" + fg.dependencyID);
+        fg.dependencyID++;
         cfg.getDependencies().add(dependency);
         Set<File> files = cfg.resolve();
-        project.getConfigurations().remove(cfg);
+        fg.project.getConfigurations().remove(cfg);
+        fg.dependencyID--;
         return files;
     }
 
@@ -86,8 +90,8 @@ public class Util {
      * Resolves a dependency, downloading the file and its transitives
      * if not cached and returns the set of files.
      */
-    public static Set<File> resolveDependency(Project project, Object dependency) {
-        return resolveDependency(project, project.getDependencies().create(dependency));
+    public static Set<File> resolveDependency(ForgeGradlePluginInstance fg, Object dependency) {
+        return resolveDependency(fg, fg.project.getDependencies().create(dependency));
     }
 
     /**
@@ -148,6 +152,11 @@ public class Util {
         reader.close();
 
         return mappings;
+    }
+
+    public static void applySpecialSource(File input, File output, IOFunction<Jar, JarRemapper> remapperSupplier) throws IOException {
+        Jar inputJar = Jar.init(input);
+        remapperSupplier.apply(inputJar).remapJar(inputJar, output);
     }
 
 }
