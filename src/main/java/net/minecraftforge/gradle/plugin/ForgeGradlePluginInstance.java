@@ -1,8 +1,6 @@
 package net.minecraftforge.gradle.plugin;
 
-import net.minecraftforge.gradle.mappings.MCPMappingProvider;
 import net.minecraftforge.gradle.mappings.MappingManager;
-import net.minecraftforge.gradle.mappings.Remapper;
 import org.gradle.api.Project;
 
 import static net.minecraftforge.gradle.Constants.*;
@@ -30,19 +28,23 @@ public class ForgeGradlePluginInstance {
     }
 
     public void init() {
-        // Add a deobf() method to the dependencies block
-        Remapper.addDeobfMethod(this);
+        // It's a pain, but we need to get the class at runtime and call the method.
+        // Java compiles first, then groovy, so the groovy class we're accessing here
+        // isn't available when the class is compiled, resulting in an error.
+        // We're just calling a method, though, so it should be fine.
+        try {
+            Class<?> clazz = Class.forName("net.minecraftforge.gradle.groovy.ForgeGradleDSL");
+            clazz.getMethod("extendDSL", ForgeGradlePluginInstance.class).invoke(null, this);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public void initExtensions() {
         fgExt = project.getExtensions().create(FORGE_GRADLE_EXTENSION_NAME, ForgeGradleExtension.class, project);
-        project.getExtensions().create(MAPPINGS_EXTENSION_NAME, MappingsExtension.class, mappings);
     }
 
     public void afterEvaluate() {
-        if (fgExt.builtin.mcpMappings) {
-            mappings.register("mcp", new MCPMappingProvider());
-        }
         mappings.addRepositories();
     }
 

@@ -1,15 +1,9 @@
 package net.minecraftforge.gradle.util;
 
 import au.com.bytecode.opencsv.CSVReader;
-import groovy.lang.Closure;
-import groovy.lang.ExpandoMetaClass;
-import groovy.lang.GroovyObject;
-import groovy.lang.MetaClass;
 import net.md_5.specialsource.Jar;
 import net.md_5.specialsource.JarRemapper;
 import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance;
-import org.codehaus.groovy.reflection.CachedMethod;
-import org.codehaus.groovy.runtime.metaclass.ClosureMetaMethod;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.FileCollection;
@@ -22,7 +16,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -45,31 +38,6 @@ public class Util {
             urls.add(file.toURI().toURL());
         }
         return urls.toArray(new URL[urls.size()]);
-    }
-
-    /**
-     * Adds the specified closure as a method in the target.<br/>
-     * Methods inside the closure must be named {@code doCall} and
-     * return the generic type of the closure.
-     */
-    public static void addMethod(Object target, String name, Closure<?> closure) {
-        if (!(target instanceof GroovyObject)) {
-            throw new RuntimeException("Cannot add methods to the specified object!");
-        }
-
-        MetaClass metaClass = ((GroovyObject) target).getMetaClass();
-        ExpandoMetaClass emc;
-        if (metaClass instanceof ExpandoMetaClass) {
-            emc = (ExpandoMetaClass) metaClass;
-        } else {
-            emc = new ExpandoMetaClass(target.getClass());
-            ((GroovyObject) target).setMetaClass(emc);
-        }
-
-        for (Method method : closure.getClass().getDeclaredMethods()) {
-            if (!method.getName().equals("doCall")) continue;
-            emc.addMetaMethod(new ClosureMetaMethod(name, closure, CachedMethod.find(method)));
-        }
     }
 
     /**

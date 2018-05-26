@@ -1,6 +1,5 @@
 package net.minecraftforge.gradle.mappings;
 
-import groovy.lang.Closure;
 import net.md_5.specialsource.JarMapping;
 import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.InheritanceProvider;
@@ -12,12 +11,12 @@ import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance;
 import net.minecraftforge.gradle.util.LazyFileCollection;
 import net.minecraftforge.gradle.util.Util;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -26,35 +25,43 @@ import java.util.function.Supplier;
  */
 public class Remapper {
 
-    /**
-     * Adds a {@code deobf(...)} method to the {@code dependencies} block of
-     * the buildscript, allowing for dynamic dependency deobfuscation.
-     */
-    public static void addDeobfMethod(ForgeGradlePluginInstance fg) {
-        DependencyHandler deps = fg.project.getDependencies();
-        Util.addMethod(deps, "deobf", new Closure<Object>(deps) {
-            public Object doCall(Object param) {
-                return deobfDependency(fg, deps.create(param));
-            }
+    public static Object deobfDependency(ForgeGradlePluginInstance fg, Dependency dependency) {
+        return deobfDependency(fg, () -> dependency);
+    }
+
+    public static Object deobfDependency(ForgeGradlePluginInstance fg, Supplier<Dependency> dependencySupplier) {
+        return remapDependency(fg, dependencySupplier, () -> {
+            ForgeGradleExtension.Mappings fgMappings = fg.fgExt.mappings;
+            return new MappingVersion(fgMappings.provider, fgMappings.channel, fgMappings.version,
+                    fg.fgExt.minecraft.version, fgMappings.deobfMappings);
         });
     }
 
-    public static Object deobfDependency(ForgeGradlePluginInstance fg, Dependency dependency) {
-        return remapDependency(fg, dependency, () -> {
-            ForgeGradleExtension.Mappings mappings = fg.fgExt.mappings;
-            MappingVersion version = new MappingVersion(mappings.provider, mappings.channel, mappings.version,
-                    fg.fgExt.minecraft.version, mappings.deobfMappings);
-            return version;
+    public static Object remapDependency(ForgeGradlePluginInstance fg, Dependency dependency, Map<String, String> mappingInfo) {
+        return remapDependency(fg, () -> dependency, mappingInfo);
+    }
+
+    public static Object remapDependency(ForgeGradlePluginInstance fg, Supplier<Dependency> dependencySupplier, Map<String, String> mappingInfo) {
+        return remapDependency(fg, dependencySupplier, () -> {
+            ForgeGradleExtension.Mappings fgMappings = fg.fgExt.mappings;
+            String provider = mappingInfo.getOrDefault("provider", fgMappings.provider);
+            String channel = mappingInfo.getOrDefault("channel", fgMappings.channel);
+            String mcversion = mappingInfo.getOrDefault("mcversion", fg.fgExt.minecraft.version);
+            String version = mappingInfo.getOrDefault("version", fgMappings.version);
+            String mapping = mappingInfo.get("mapping");
+            if (mapping == null)
+                throw new IllegalArgumentException("Attempted to remap dependency without specifying mappings!");
+            return new MappingVersion(provider, channel, version, mcversion, mapping);
         });
     }
 
     /**
      * Creates a dependency object that represents the deobfuscated version
      */
-    public static Object remapDependency(ForgeGradlePluginInstance fg, Dependency dependency, Supplier<MappingVersion> mappingSupplier) {
+    public static Object remapDependency(ForgeGradlePluginInstance fg, Supplier<Dependency> dependencySupplier, Supplier<MappingVersion> mappingSupplier) {
         return new LazyFileCollection("deobf dependency", () -> {
             // Resolve the requested dependency
-            Set<File> files = Util.resolveDependency(fg, dependency);
+            Set<File> files = Util.resolveDependency(fg, dependencySupplier.get());
             Set<File> deobfed = new HashSet<>();
 
             MappingVersion mappingVersion = mappingSupplier.get();

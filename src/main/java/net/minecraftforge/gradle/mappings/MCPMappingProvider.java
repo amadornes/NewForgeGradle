@@ -38,6 +38,11 @@ public class MCPMappingProvider implements MappingProvider {
     private final Map<MappingVersion, MappingData> cachedData = new HashMap<>();
 
     @Override
+    public String getName() {
+        return "mcp";
+    }
+
+    @Override
     public void addDependencyRepositories(RepositoryHandler handler) {
         handler.maven(repo -> repo.setUrl(Constants.MAVEN_FORGE));
     }

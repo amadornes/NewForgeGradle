@@ -14,6 +14,13 @@ import java.util.function.Function;
 public interface MappingProvider {
 
     /**
+     * Gets the name of this mapping provider.
+     * <p>
+     * Will be read on registration and never again.
+     */
+    String getName();
+
+    /**
      * Adds the repositories required to pull any dependencies this mapping provider may need.
      */
     default void addDependencyRepositories(RepositoryHandler handler) {

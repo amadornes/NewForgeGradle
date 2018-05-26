@@ -34,8 +34,8 @@ public class MappingManager {
     /**
      * Registers a mapping provider.
      */
-    public void register(String name, MappingProvider provider) {
-        mappingProviders.put(name, provider);
+    public void register(MappingProvider provider) {
+        mappingProviders.put(provider.getName(), provider);
     }
 
     /**
