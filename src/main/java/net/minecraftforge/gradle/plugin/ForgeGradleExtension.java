@@ -13,23 +13,17 @@ import java.util.Map;
 public class ForgeGradleExtension {
 
     public final Minecraft minecraft;
-    public final Forge forge;
     public final Mappings mappings;
 
     @Inject
     public ForgeGradleExtension(Project project) {
         ObjectFactory factory = project.getObjects();
         minecraft = factory.newInstance(Minecraft.class);
-        forge = factory.newInstance(Forge.class);
         mappings = factory.newInstance(Mappings.class);
     }
 
     void minecraft(Action<? super Minecraft> action) {
         action.execute(minecraft);
-    }
-
-    void forge(Action<? super Forge> action) {
-        action.execute(forge);
     }
 
     void mappings(Action<? super Mappings> action) {
@@ -47,10 +41,6 @@ public class ForgeGradleExtension {
     }
 
     public static class Minecraft {
-        public String version;
-    }
-
-    public static class Forge {
         public String version;
     }
 

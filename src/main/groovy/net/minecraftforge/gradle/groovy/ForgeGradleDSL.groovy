@@ -48,10 +48,10 @@ class ForgeGradleDSL {
             return Remapper.remapDependency(fg, dep, args)
         }
 
-        fg.project.dependencies.metaClass.forge = { ->
+        fg.project.dependencies.metaClass.forge = { String version ->
             Supplier depSupplier = {
                 return fg.project.dependencies.create("net.minecraftforge:forge:"
-                        + fg.fgExt.minecraft.version + "-" + fg.fgExt.forge.version + ":universal")
+                        + fg.fgExt.minecraft.version + "-$version:universal")
             }
             return Remapper.remapDependency(fg, depSupplier, [mapping: fg.fgExt.mappings.forgeMappings])
         }
