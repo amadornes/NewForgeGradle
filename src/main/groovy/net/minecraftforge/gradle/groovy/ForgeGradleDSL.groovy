@@ -53,7 +53,7 @@ class ForgeGradleDSL {
                 return fg.project.dependencies.create("net.minecraftforge:forge:"
                         + fg.fgExt.minecraft.version + "-" + fg.fgExt.forge.version + ":universal")
             }
-            return Remapper.remapDependency(fg, depSupplier, [mapping: "notch-srg"])
+            return Remapper.remapDependency(fg, depSupplier, [mapping: fg.fgExt.mappings.forgeMappings])
         }
     }
 
