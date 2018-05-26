@@ -2,11 +2,10 @@ apply plugin: 'java'
 apply plugin: 'groovy'
 apply plugin: 'idea'
 
+group = 'net.minecraftforge.gradle'
+version = '3.0.0'
+
 repositories {
-    maven {
-        name = 'forge'
-        url = 'http://files.minecraftforge.net/maven'
-    }
     jcenter()
     mavenCentral()
 }
