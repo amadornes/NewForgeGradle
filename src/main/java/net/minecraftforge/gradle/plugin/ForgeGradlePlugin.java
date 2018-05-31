@@ -1,15 +1,19 @@
 package net.minecraftforge.gradle.plugin;
 
-import net.minecraftforge.gradle.Constants;
 import net.minecraftforge.gradle.api.FGPlugin;
 import net.minecraftforge.gradle.api.ForgeGradleAPI;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
 /**
  * The main plugin class.
  */
 public final class ForgeGradlePlugin implements Plugin<Project>, FGPlugin {
+
+    private final Map<Project, ForgeGradlePluginInstance> instances = new WeakHashMap<>();
 
     /**
      * Apply ForgeGradle to the specified project.
@@ -20,11 +24,13 @@ public final class ForgeGradlePlugin implements Plugin<Project>, FGPlugin {
         inst.init();
         inst.initExtensions();
         project.afterEvaluate($ -> inst.afterEvaluate());
+
+        instances.put(project, inst);
     }
 
     @Override
     public ForgeGradleAPI getAPI(Project project) {
-        return (ForgeGradleAPI) project.getProperties().get(Constants.PLUGIN_API_PROPERTY_NAME);
+        return instances.get(project).api;
     }
 
 }
