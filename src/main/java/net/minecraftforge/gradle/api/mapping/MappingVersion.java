@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.api;
+package net.minecraftforge.gradle.api.mapping;
 
 import org.gradle.internal.impldep.org.apache.commons.lang.builder.ToStringBuilder;
 import org.gradle.internal.impldep.org.apache.commons.lang.builder.ToStringStyle;

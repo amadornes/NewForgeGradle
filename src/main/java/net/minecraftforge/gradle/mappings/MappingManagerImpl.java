@@ -1,9 +1,10 @@
 package net.minecraftforge.gradle.mappings;
 
 import net.minecraftforge.gradle.Constants;
-import net.minecraftforge.gradle.api.MappingEntry;
-import net.minecraftforge.gradle.api.MappingProvider;
-import net.minecraftforge.gradle.api.MappingVersion;
+import net.minecraftforge.gradle.api.mapping.MappingEntry;
+import net.minecraftforge.gradle.api.mapping.MappingManager;
+import net.minecraftforge.gradle.api.mapping.MappingProvider;
+import net.minecraftforge.gradle.api.mapping.MappingVersion;
 import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance;
 import net.minecraftforge.gradle.util.Util;
 import org.gradle.internal.impldep.org.apache.commons.codec.digest.DigestUtils;
@@ -16,12 +17,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class MappingManager {
+public class MappingManagerImpl implements MappingManager {
 
     private final ForgeGradlePluginInstance fg;
     private final Map<String, MappingProvider> mappingProviders = new HashMap<>();
 
-    public MappingManager(ForgeGradlePluginInstance fg) {
+    public MappingManagerImpl(ForgeGradlePluginInstance fg) {
         this.fg = fg;
     }
 
@@ -31,18 +32,17 @@ public class MappingManager {
         }
     }
 
-    /**
-     * Registers a mapping provider.
-     */
+    @Override
     public void register(MappingProvider provider) {
         mappingProviders.put(provider.getName(), provider);
     }
 
-    /**
-     * Gets or creates a mappings file for the specified provider and version.
-     * <p>
-     * Automatically handles refreshing dependencies.
-     */
+    @Override
+    public boolean isRegistered(String name) {
+        return mappingProviders.containsKey(name);
+    }
+
+    @Override
     public File getMapping(MappingVersion version) {
         MappingProvider provider = mappingProviders.get(version.getProvider());
         if (provider == null) {
@@ -85,11 +85,7 @@ public class MappingManager {
         return file;
     }
 
-    /**
-     * Gets the hash of the mappings file for the specified provider and version.
-     * <p>
-     * Automatically handles refreshing dependencies.
-     */
+    @Override
     public String getMappingHash(MappingVersion version) {
         try {
             File mapping = getMapping(version);

@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.api;
+package net.minecraftforge.gradle.api.mapping;
 
 /**
  * Represents a generic mapping entry. Do not use directly.

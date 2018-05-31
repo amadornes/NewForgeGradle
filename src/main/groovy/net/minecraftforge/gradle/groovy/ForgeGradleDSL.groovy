@@ -1,6 +1,6 @@
 package net.minecraftforge.gradle.groovy
 
-import net.minecraftforge.gradle.api.MappingProvider
+import net.minecraftforge.gradle.api.mapping.MappingProvider
 import net.minecraftforge.gradle.mappings.MCPMappingProvider
 import net.minecraftforge.gradle.mappings.Remapper
 import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance

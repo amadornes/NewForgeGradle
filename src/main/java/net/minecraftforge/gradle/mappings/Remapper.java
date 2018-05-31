@@ -5,7 +5,7 @@ import net.md_5.specialsource.JarRemapper;
 import net.md_5.specialsource.provider.InheritanceProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
-import net.minecraftforge.gradle.api.MappingVersion;
+import net.minecraftforge.gradle.api.mapping.MappingVersion;
 import net.minecraftforge.gradle.plugin.ForgeGradleExtension;
 import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance;
 import net.minecraftforge.gradle.util.LazyFileCollection;

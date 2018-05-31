@@ -1,6 +1,7 @@
 package net.minecraftforge.gradle.plugin;
 
-import net.minecraftforge.gradle.mappings.MappingManager;
+import net.minecraftforge.gradle.mappings.MappingManagerImpl;
+import net.minecraftforge.gradle.repo.CustomRepo;
 import org.gradle.api.Project;
 
 import static net.minecraftforge.gradle.Constants.*;
@@ -13,7 +14,7 @@ public class ForgeGradlePluginInstance {
     public final Project project;
 
     // Internal systems
-    public final MappingManager mappings;
+    public final MappingManagerImpl mappings;
 
     // Extensions
     public ForgeGradleExtension fgExt;
@@ -24,7 +25,11 @@ public class ForgeGradlePluginInstance {
     ForgeGradlePluginInstance(Project project) {
         this.project = project;
 
-        this.mappings = new MappingManager(this);
+        this.mappings = new MappingManagerImpl(this);
+
+        project.getRepositories().add(new CustomRepo());
+
+        project.setProperty(PLUGIN_API_PROPERTY_NAME, new ForgeGradleAPIImpl(this));
     }
 
     public void init() {

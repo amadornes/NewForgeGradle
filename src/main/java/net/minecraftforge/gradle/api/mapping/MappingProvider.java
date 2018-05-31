@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.api;
+package net.minecraftforge.gradle.api.mapping;
 
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 
