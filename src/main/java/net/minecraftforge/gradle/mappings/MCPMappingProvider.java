@@ -113,7 +113,7 @@ public class MCPMappingProvider implements MappingProvider {
         dependencies.put(CSV_HANDLE, Maps.newHashMap(
                 "group", "de.oceanlabs.mcp",
                 "name", "mcp_" + version.getChannel(),
-                "version", version.getVersion(),
+                "version", version.getVersion() + "-+",
                 "ext", "zip"
         ));
         return dependencies;
