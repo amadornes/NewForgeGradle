@@ -50,12 +50,17 @@ public class StreamedExternalResource extends AbstractExternalResource {
     @Override
     public ExternalResourceReadResult<Void> writeToIfPresent(File file) throws ResourceException {
         try {
+            StreamedResource res = streamer.apply(url);
+            if (res == null) return null;
+            InputStream is = res.getStream();
             FileOutputStream fos = new FileOutputStream(file);
-            ExternalResourceReadResult<Void> result = writeTo(fos);
+            int bytes = IOUtils.copy(is, fos);
+            is.close();
+            res.close();
             fos.close();
-            return result;
+            return ExternalResourceReadResult.of(bytes);
         } catch (IOException ex) {
-            throw ResourceExceptions.getFailed(getURI(), ex);
+            return null;
         }
     }
 
@@ -96,7 +101,7 @@ public class StreamedExternalResource extends AbstractExternalResource {
     public <T> ExternalResourceReadResult<T> withContentIfPresent(Transformer<? extends T, ? super InputStream> transformer) throws ResourceException {
         try {
             StreamedResource res = streamer.apply(url);
-            if (res == null) throw ResourceExceptions.getMissing(getURI());
+            if (res == null) return null;
             InputStream is = res.getStream();
             int initiallyAvailable = is.available();
             T result = transformer.transform(is);
@@ -105,7 +110,7 @@ public class StreamedExternalResource extends AbstractExternalResource {
             res.close();
             return ExternalResourceReadResult.of(initiallyAvailable - availableNow, result);
         } catch (IOException ex) {
-            return ExternalResourceReadResult.of(0, null);
+            return null;
         }
     }
 
@@ -114,7 +119,7 @@ public class StreamedExternalResource extends AbstractExternalResource {
     public <T> ExternalResourceReadResult<T> withContentIfPresent(ContentAction<? extends T> contentAction) throws ResourceException {
         try {
             StreamedResource res = streamer.apply(url);
-            if (res == null) throw ResourceExceptions.getMissing(getURI());
+            if (res == null) return null;
             InputStream is = res.getStream();
             int initiallyAvailable = is.available();
             T result = contentAction.execute(is, getMetaData());
@@ -123,7 +128,7 @@ public class StreamedExternalResource extends AbstractExternalResource {
             res.close();
             return ExternalResourceReadResult.of(initiallyAvailable - availableNow, result);
         } catch (IOException ex) {
-            return ExternalResourceReadResult.of(0, null);
+            return null;
         }
     }
 
@@ -143,10 +148,10 @@ public class StreamedExternalResource extends AbstractExternalResource {
     public ExternalResourceMetaData getMetaData() {
         try {
             StreamedResource res = streamer.apply(url);
-            if (res == null) throw ResourceExceptions.getMissing(getURI());
+            if (res == null) return null;
             return res.getMetadata();
         } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            return null;
         }
     }
 
