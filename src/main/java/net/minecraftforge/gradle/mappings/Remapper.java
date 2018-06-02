@@ -74,7 +74,7 @@ public class Remapper {
                         + mappingVersion.getProvider() + "-" + mappingHash + ".jar");
                 deobfed.add(deobfFile);
 
-                if (deobfFile.exists()) continue;
+                if (deobfFile.exists() && !fg.project.getGradle().getStartParameter().isRefreshDependencies()) continue;
 
                 try {
                     Util.applySpecialSource(file, deobfFile, jar -> {
