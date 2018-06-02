@@ -44,6 +44,9 @@ class ForgeGradleDSL {
             fg.project.repositories.maven {
                 it.name = "mclibraries"
                 it.url = "https://libraries.minecraft.net"
+                it.metadataSources {
+                    it.artifact() // Don't even start looking for these guys' deps... It ends in hell
+                }
             }
         }
     }

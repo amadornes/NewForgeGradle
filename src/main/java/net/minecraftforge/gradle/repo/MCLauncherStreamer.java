@@ -106,6 +106,57 @@ public class MCLauncherStreamer implements IOFunction<URL, StreamedResource> {
         set(doc, project, "name", "minecraft");
         set(doc, project, "description", "minecraft");
 
+        Element repositories = doc.createElement("repositories");
+        Element libsRepo = doc.createElement("repository");
+        set(doc, libsRepo, "id", "mclibraries");
+        set(doc, libsRepo, "url", "https://libraries.minecraft.net");
+        repositories.appendChild(libsRepo);
+        project.appendChild(repositories);
+
+        Element dependencies = doc.createElement("dependencies");
+        for (JsonElement libElement : manifest.getAsJsonArray("libraries")) {
+            JsonObject lib = libElement.getAsJsonObject();
+
+            // Ignore this dependency if anything says we shouldn't be using it
+            if (lib.has("rules")) {
+                String os = Util.getOS();
+                Boolean shouldDownload = null;
+                for (JsonElement ruleElement : lib.getAsJsonArray("rules")) {
+                    JsonObject rule = ruleElement.getAsJsonObject();
+                    boolean allow = rule.get("action").getAsString().equals("allow");
+                    if (!rule.has("os") || rule.getAsJsonObject("os").get("name").getAsString().equals(os)) {
+                        shouldDownload = allow;
+                    }
+                }
+                // If a rule has blocked this download, skip it
+                if (shouldDownload != null && !shouldDownload) continue;
+            }
+
+            String name = lib.get("name").getAsString();
+            JsonObject downloads = lib.getAsJsonObject("downloads");
+
+            // Add main download if we need it
+            if (downloads.has("artifact")) {
+                addDependency(doc, dependencies, name, null, "compile");
+            }
+
+            if (downloads.has("classifiers")) {
+                JsonObject classifiers = downloads.getAsJsonObject("classifiers");
+                // Add test dependencies if needed
+                if (classifiers.has("test")) {
+                    addDependency(doc, dependencies, name, "test", "test");
+                }
+                // Locate natives if required
+                if (lib.has("natives")) {
+                    JsonElement classifier = lib.getAsJsonObject("natives").get(Util.getOS());
+                    if (classifier != null) {
+                        addDependency(doc, dependencies, name, classifier.getAsString(), "runtime");
+                    }
+                }
+            }
+        }
+        project.appendChild(dependencies);
+
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         DOMSource source = new DOMSource(doc);
@@ -115,6 +166,21 @@ public class MCLauncherStreamer implements IOFunction<URL, StreamedResource> {
         transformer.transform(source, result);
 
         return new StreamedResource.ByteArrayStreamedResource(url, baos.toByteArray());
+    }
+
+    private void addDependency(Document doc, Element dependencies, String name, String classifier, String scope) {
+        String[] nameElements = name.split(":");
+        Element dep = doc.createElement("dependency");
+        set(doc, dep, "groupId", nameElements[0]);
+        set(doc, dep, "artifactId", nameElements[1]);
+        set(doc, dep, "version", nameElements[2]);
+        if (classifier != null) {
+            set(doc, dep, "classifier", classifier);
+        } else if (nameElements.length == 4) {
+            set(doc, dep, "classifier", nameElements[3]);
+        }
+        set(doc, dep, "scope", scope);
+        dependencies.appendChild(dep);
     }
 
     private void set(Document doc, Element parent, String name, String value) {

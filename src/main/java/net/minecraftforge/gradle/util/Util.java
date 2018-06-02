@@ -11,6 +11,7 @@ import org.gradle.internal.impldep.com.google.gson.Gson;
 import org.gradle.internal.impldep.com.google.gson.JsonObject;
 import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
 import org.gradle.internal.impldep.org.apache.commons.lang.ArrayUtils;
+import org.gradle.internal.os.OperatingSystem;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -207,6 +208,15 @@ public class Util {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    /**
+     * Gets the operating system string.
+     */
+    public static String getOS() {
+        OperatingSystem os = OperatingSystem.current();
+        return os == OperatingSystem.WINDOWS ? "windows" : os == OperatingSystem.MAC_OS ? "osx" :
+                os == OperatingSystem.LINUX ? "linux" : null;
     }
 
 }
