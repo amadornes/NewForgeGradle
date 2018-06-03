@@ -143,6 +143,7 @@ public class Util {
     public static void applySpecialSource(File input, File output, IOFunction<Jar, JarRemapper> remapperSupplier) throws IOException {
         Jar inputJar = Jar.init(input);
         remapperSupplier.apply(inputJar).remapJar(inputJar, output);
+        inputJar.close();
     }
 
     /**
