@@ -4,6 +4,10 @@ import net.minecraftforge.gradle.api.ForgeGradleAPI;
 import net.minecraftforge.gradle.mappings.MappingManagerImpl;
 import org.gradle.api.Project;
 
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+
 import static net.minecraftforge.gradle.Constants.*;
 
 /**
@@ -22,6 +26,7 @@ public class ForgeGradlePluginInstance {
 
     // Miscellaneous
     public int dependencyID = 0; // Stores the current dependency ID
+    public Set<File> refreshedDeps = new HashSet<>();
 
     ForgeGradlePluginInstance(Project project) {
         this.project = project;

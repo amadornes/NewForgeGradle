@@ -34,35 +34,44 @@ public class Remapper {
             ForgeGradleExtension.Mappings fgMappings = fg.fgExt.mappings;
             return new MappingVersion(fgMappings.provider, fgMappings.channel, fgMappings.version,
                     fg.fgExt.minecraft.version, fgMappings.deobfMappings);
-        });
+        }, true);
     }
 
-    public static Object remapDependency(ForgeGradlePluginInstance fg, Dependency dependency, Map<String, String> mappingInfo) {
+    public static Object remapDependency(ForgeGradlePluginInstance fg, Dependency dependency, Map<String, Object> mappingInfo) {
         return remapDependency(fg, () -> dependency, mappingInfo);
     }
 
-    public static Object remapDependency(ForgeGradlePluginInstance fg, Supplier<Dependency> dependencySupplier, Map<String, String> mappingInfo) {
+    public static Object remapDependency(ForgeGradlePluginInstance fg, Supplier<Dependency> dependencySupplier, Map<String, Object> mappingInfo) {
         return remapDependency(fg, dependencySupplier, () -> {
             ForgeGradleExtension.Mappings fgMappings = fg.fgExt.mappings;
-            String provider = mappingInfo.getOrDefault("provider", fgMappings.provider);
-            String channel = mappingInfo.getOrDefault("channel", fgMappings.channel);
-            String mcversion = mappingInfo.getOrDefault("mcversion", fg.fgExt.minecraft.version);
-            String version = mappingInfo.getOrDefault("version", fgMappings.version);
-            String mapping = mappingInfo.get("mapping");
+            String provider = (String) mappingInfo.getOrDefault("provider", fgMappings.provider);
+            String channel = (String) mappingInfo.getOrDefault("channel", fgMappings.channel);
+            String mcversion = (String) mappingInfo.getOrDefault("mcversion", fg.fgExt.minecraft.version);
+            String version = (String) mappingInfo.getOrDefault("version", fgMappings.version);
+            String mapping = (String) mappingInfo.get("mapping");
             if (mapping == null)
                 throw new IllegalArgumentException("Attempted to remap dependency without specifying mappings!");
             return new MappingVersion(provider, channel, version, mcversion, mapping);
-        });
+        }, (boolean) mappingInfo.getOrDefault("remapTransitives", true));
     }
 
     /**
      * Creates a dependency object that represents the deobfuscated version
      */
-    public static Object remapDependency(ForgeGradlePluginInstance fg, Supplier<Dependency> dependencySupplier, Supplier<MappingVersion> mappingSupplier) {
+    public static Object remapDependency(ForgeGradlePluginInstance fg, Supplier<Dependency> dependencySupplier, Supplier<MappingVersion> mappingSupplier, boolean remapTransitives) {
         return new LazyFileCollection("deobf dependency", () -> {
             // Resolve the requested dependency
-            Set<File> files = Util.resolveDependency(fg, dependencySupplier.get());
+            Dependency dep = dependencySupplier.get();
+            Set<File> files = Util.resolveDependency(fg, dep);
             Set<File> deobfed = new HashSet<>();
+
+            if (!remapTransitives) {
+                Dependency nonTransitive = Util.asNonTransitive(dep);
+                Set<File> nonTransitiveFiles = Util.resolveDependency(fg, nonTransitive);
+                deobfed.addAll(files);
+                deobfed.removeAll(nonTransitiveFiles);
+                files = nonTransitiveFiles;
+            }
 
             MappingVersion mappingVersion = mappingSupplier.get();
             File mappingFile = fg.mappings.getMapping(mappingVersion);
@@ -74,7 +83,10 @@ public class Remapper {
                         + mappingVersion.getProvider() + "-" + mappingHash + ".jar");
                 deobfed.add(deobfFile);
 
-                if (deobfFile.exists() && !fg.project.getGradle().getStartParameter().isRefreshDependencies()) continue;
+                // Skip deobfuscation if we've already visited this file
+                if (deobfFile.exists() && (!fg.project.getGradle().getStartParameter().isRefreshDependencies() || !fg.refreshedDeps.add(deobfFile))) {
+                    continue;
+                }
 
                 try {
                     Util.applySpecialSource(file, deobfFile, jar -> {

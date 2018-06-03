@@ -6,6 +6,8 @@ import net.md_5.specialsource.JarRemapper;
 import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.FileCollectionDependency;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.file.FileCollection;
 import org.gradle.internal.impldep.com.google.gson.Gson;
 import org.gradle.internal.impldep.com.google.gson.JsonObject;
@@ -55,6 +57,9 @@ public class Util {
      * if not cached and returns the set of files.
      */
     public static Set<File> resolveDependency(ForgeGradlePluginInstance fg, Dependency dependency) {
+        if(dependency instanceof FileCollectionDependency){
+            return ((FileCollectionDependency) dependency).getFiles().getFiles();
+        }
         Configuration cfg = fg.project.getConfigurations().maybeCreate("resolve_dep_" + fg.dependencyID);
         fg.dependencyID++;
         cfg.getDependencies().add(dependency);
@@ -217,6 +222,18 @@ public class Util {
         OperatingSystem os = OperatingSystem.current();
         return os == OperatingSystem.WINDOWS ? "windows" : os == OperatingSystem.MAC_OS ? "osx" :
                 os == OperatingSystem.LINUX ? "linux" : null;
+    }
+
+    /**
+     * Creates a copy of a dependency that has no transitive elements.
+     */
+    public static Dependency asNonTransitive(Dependency dependency) {
+        if (dependency instanceof ModuleDependency) {
+            ModuleDependency dep = ((ModuleDependency) dependency).copy();
+            dep.setTransitive(false);
+            return dep;
+        }
+        return dependency;
     }
 
 }

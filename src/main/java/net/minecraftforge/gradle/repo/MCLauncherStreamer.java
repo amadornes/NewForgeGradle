@@ -25,8 +25,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
+import java.util.jar.JarOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
 
 /**
  * A resource streamer for Minecraft client and server jars.
@@ -35,7 +39,7 @@ public class MCLauncherStreamer implements IOFunction<URL, StreamedResource> {
 
     // A pattern that matches both .pom files and the client/server jars
     private static final Pattern PATTERN = Pattern.compile(
-            "/net/minecraft/minecraft/(\\d\\.\\d+(?:\\.\\d))/minecraft-\\1(?:-(client|server))?\\.(jar|pom)(?:\\.(md5|sha1))?");
+            "/net/minecraft/minecraft/(\\d\\.\\d+(?:\\.\\d))/minecraft-\\1(?:-(client|server-pure))?\\.(jar|pom)(?:\\.(md5|sha1))?");
 
     private Cache<String, Pair<String, String>> hashes = CacheBuilder.newBuilder().expireAfterAccess(500, TimeUnit.SECONDS).build();
 
@@ -82,10 +86,44 @@ public class MCLauncherStreamer implements IOFunction<URL, StreamedResource> {
                 throw new RuntimeException(ex);
             }
         } else {
-            JsonObject artifact = manifest.getAsJsonObject("downloads").getAsJsonObject(classifier);
+            String[] artifactInfo = classifier.split("-");
+            JsonObject artifact = manifest.getAsJsonObject("downloads").getAsJsonObject(artifactInfo[0]);
             String jar = artifact.get("url").getAsString();
-            return new StreamedResource.URLStreamedResource(new URL(jar));
+            if (classifier.equals("client")) {
+                return new StreamedResource.URLStreamedResource(new URL(jar));
+            } else {
+                try {
+                    JarInputStream is = new JarInputStream(new URL(jar).openStream());
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    JarOutputStream os = new JarOutputStream(baos);
+
+                    JarEntry entry;
+                    while ((entry = is.getNextJarEntry()) != null) {
+                        if (!isServerEntryValid(entry)) continue;
+                        os.putNextEntry(entry);
+                        IOUtils.copyLarge(is, os, 0, entry.getSize());
+                        os.closeEntry();
+                    }
+
+                    os.close();
+                    is.close();
+
+                    return new StreamedResource.ByteArrayStreamedResource(url, baos.toByteArray());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    throw new RuntimeException(ex);
+                }
+            }
         }
+    }
+
+    private boolean isServerEntryValid(ZipEntry entry) {
+        if(entry.isDirectory()) return false;
+        String name = entry.getName();
+        return !name.startsWith("org/bouncycastle/") && !name.startsWith("org/bouncycastle/") && !name.startsWith("org/apache/")
+                && !name.startsWith("com/google/") && !name.startsWith("com/mojang/authlib/") && !name.startsWith("com/mojang/util/")
+                && !name.startsWith("gnu/trove/") && !name.startsWith("io/netty/") && !name.startsWith("javax/annotation/")
+                && !name.startsWith("argo/") && !name.startsWith("it/unimi/dsi/fastutil/");
     }
 
     private StreamedResource streamPOM(URL url, JsonObject manifest) throws Exception {
