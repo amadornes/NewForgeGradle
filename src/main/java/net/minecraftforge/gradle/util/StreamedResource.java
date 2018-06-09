@@ -1,12 +1,16 @@
 package net.minecraftforge.gradle.util;
 
+import org.gradle.internal.hash.HashUtil;
+import org.gradle.internal.hash.HashValue;
 import org.gradle.internal.resource.metadata.DefaultExternalResourceMetaData;
 import org.gradle.internal.resource.metadata.ExternalResourceMetaData;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Date;
@@ -20,23 +24,29 @@ public interface StreamedResource extends Closeable {
 
     InputStream getStream() throws IOException;
 
-    ExternalResourceMetaData getMetadata();
+    ExternalResourceMetaData getMetadata(URI uri);
 
     @Override
     void close() throws IOException;
 
     class URLStreamedResource implements StreamedResource {
 
-        private final URL url;
         private final URLConnection connection;
-        private final int length;
-        private final long date;
+        private final long length;
+        @Nullable
+        private final Date date;
+        @Nullable
+        private final HashValue hash;
 
         public URLStreamedResource(URL url) throws IOException {
-            this.url = url;
+            this(url, -1, null, null);
+        }
+
+        public URLStreamedResource(URL url, long length, @Nullable Date date, @Nullable HashValue hash) throws IOException {
             this.connection = url.openConnection();
-            this.length = this.connection.getContentLength();
-            this.date = connection.getDate();
+            this.hash = hash;
+            this.length = length != -1 ? length : this.connection.getContentLengthLong();
+            this.date = date != null ? date : new Date(connection.getDate());
         }
 
         @Override
@@ -45,8 +55,8 @@ public interface StreamedResource extends Closeable {
         }
 
         @Override
-        public ExternalResourceMetaData getMetadata() {
-            return new DefaultExternalResourceMetaData(Util.getURI(url), date, length);
+        public ExternalResourceMetaData getMetadata(URI uri) {
+            return new DefaultExternalResourceMetaData(uri, date, length, null, null, hash);
         }
 
         @Override
@@ -58,12 +68,10 @@ public interface StreamedResource extends Closeable {
 
     class ByteArrayStreamedResource implements StreamedResource {
 
-        private final URL url;
         private final byte[] bytes;
         private InputStream stream;
 
-        public ByteArrayStreamedResource(URL url, byte[] bytes) {
-            this.url = url;
+        public ByteArrayStreamedResource(byte[] bytes) {
             this.bytes = bytes;
         }
 
@@ -74,8 +82,9 @@ public interface StreamedResource extends Closeable {
         }
 
         @Override
-        public ExternalResourceMetaData getMetadata() {
-            return new DefaultExternalResourceMetaData(Util.getURI(url), new Date().getTime(), bytes.length);
+        public ExternalResourceMetaData getMetadata(URI uri) {
+            return new DefaultExternalResourceMetaData(uri, new Date().getTime(), bytes.length,
+                    null, null, HashUtil.sha1(bytes));
         }
 
         @Override

@@ -4,8 +4,8 @@ import net.minecraftforge.gradle.api.mapping.MappingProvider
 import net.minecraftforge.gradle.mappings.MCPMappingProvider
 import net.minecraftforge.gradle.mappings.Remapper
 import net.minecraftforge.gradle.plugin.ForgeGradlePluginInstance
-import net.minecraftforge.gradle.repo.MCLauncherStreamer
-import net.minecraftforge.gradle.repo.MagicalRepo
+import net.minecraftforge.gradle.repo.CustomRepository
+import net.minecraftforge.gradle.repo.MCLauncherArtifactProvider
 import org.gradle.api.Action
 
 import java.util.function.Supplier
@@ -40,7 +40,7 @@ class ForgeGradleDSL {
         }
 
         fg.project.repositories.metaClass.minecraftMaven = {
-            MagicalRepo.add(fg.project.repositories, "mclauncher", "https://launcher.mojang.com/", new MCLauncherStreamer())
+            def repo = CustomRepository.add(fg.project.repositories, "mclauncher", "https://launcher.mojang.com/", new MCLauncherArtifactProvider(), null)
             fg.project.repositories.maven {
                 it.name = "mclibraries"
                 it.url = "https://libraries.minecraft.net"

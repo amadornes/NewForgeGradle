@@ -1,14 +1,15 @@
 package net.minecraftforge.gradle.repo;
 
 import com.google.common.io.CountingInputStream;
-import net.minecraftforge.gradle.util.StreamedExternalResource;
 import net.minecraftforge.gradle.util.StreamedResource;
 import net.minecraftforge.gradle.util.Util;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectCollection;
 import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.ArtifactIdentifier;
+import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.internal.artifacts.DefaultArtifactIdentifier;
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.ConfiguredModuleComponentRepository;
@@ -21,17 +22,27 @@ import org.gradle.api.internal.artifacts.repositories.resolver.MavenResolver;
 import org.gradle.api.resources.ResourceException;
 import org.gradle.internal.hash.HashValue;
 import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
-import org.gradle.internal.resource.*;
+import org.gradle.internal.resource.AbstractExternalResource;
+import org.gradle.internal.resource.ExternalResource;
+import org.gradle.internal.resource.ExternalResourceName;
+import org.gradle.internal.resource.ExternalResourceReadResult;
+import org.gradle.internal.resource.ExternalResourceRepository;
+import org.gradle.internal.resource.ExternalResourceWriteResult;
+import org.gradle.internal.resource.ReadableContent;
+import org.gradle.internal.resource.ResourceExceptions;
 import org.gradle.internal.resource.metadata.ExternalResourceMetaData;
 import org.gradle.internal.resource.transfer.CacheAwareExternalResourceAccessor;
 
 import javax.annotation.Nullable;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,11 +52,28 @@ public class CustomRepository extends AbstractArtifactRepository implements Reso
             "^/(?<group>\\S+(?:/\\S+)*)/(?<name>\\S+)/(?<version>\\S+)/" +
                     "\\2-\\3(?:-(?<classifier>[^.\\s]+))?\\.(?<extension>\\S+)$");
 
+    public static CustomRepository add(RepositoryHandler handler, String name, Object url,
+                                       @Nullable ArtifactProvider provider, @Nullable ArtifactStore store) {
+        // Create the real maven repo we'll be using and remove it
+        MavenArtifactRepository maven = handler.maven($ -> {
+            $.setName(name);
+            $.setUrl(url);
+        });
+        handler.remove(maven);
+
+        // Add our own custom repo instead, using the real one in the background
+        CustomRepository repo = new CustomRepository((DefaultMavenArtifactRepository) maven, provider, store);
+        handler.add(repo);
+        return repo;
+    }
+
     private final DefaultMavenArtifactRepository maven;
+    @Nullable
     private final ArtifactProvider provider;
+    @Nullable
     private final ArtifactStore store;
 
-    private CustomRepository(DefaultMavenArtifactRepository maven, ArtifactProvider provider, ArtifactStore store) {
+    private CustomRepository(DefaultMavenArtifactRepository maven, @Nullable ArtifactProvider provider, @Nullable ArtifactStore store) {
         this.maven = maven;
         this.provider = provider;
         this.store = store;
@@ -85,7 +113,7 @@ public class CustomRepository extends AbstractArtifactRepository implements Reso
             Util.setFinal(resolver, ExternalResourceResolver.class, "repository", repo);
             Util.setFinal(accessor, accessor.getClass(), "delegate", repo);
         }
-        if(store != null) {
+        if (store != null) {
 
         }
         return resolver;
@@ -123,7 +151,7 @@ public class CustomRepository extends AbstractArtifactRepository implements Reso
                                 match.group("version")
                         ),
                         match.group("name"),
-                        null,
+                        match.group("extension"),
                         match.group("extension"),
                         match.group("classifier"));
                 return new CustomArtifactExternalResource(uri, identifier);
@@ -250,7 +278,7 @@ public class CustomRepository extends AbstractArtifactRepository implements Reso
             try {
                 StreamedResource resource = getResource();
                 if (resource == null) return null;
-                return resource.getMetadata();
+                return resource.getMetadata(uri);
             } catch (IOException e) {
                 return null;
             }
