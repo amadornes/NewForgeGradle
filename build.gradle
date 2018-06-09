@@ -5,12 +5,32 @@ apply plugin: 'idea'
 group = 'net.minecraftforge.gradle'
 version = '3.0.0'
 
+sourceSets {
+    api
+    shared
+    moddev
+    forgedev
+}
+
 repositories {
     jcenter()
     mavenCentral()
 }
 
 dependencies {
-    implementation gradleApi()
-    implementation 'net.md-5:SpecialSource:1.8.2'
+    apiImplementation gradleApi()
+
+    sharedImplementation gradleApi()
+    sharedImplementation 'net.md-5:SpecialSource:1.8.2'
+    sharedImplementation sourceSets.api.output
+
+    moddevImplementation gradleApi()
+    moddevImplementation 'net.md-5:SpecialSource:1.8.2'
+    moddevImplementation sourceSets.api.output
+    moddevImplementation sourceSets.shared.output
+
+    forgedevImplementation gradleApi()
+    forgedevImplementation 'net.md-5:SpecialSource:1.8.2'
+    forgedevImplementation sourceSets.api.output
+    forgedevImplementation sourceSets.shared.output
 }
