@@ -113,9 +113,6 @@ public class CustomRepository extends AbstractArtifactRepository implements Reso
             Util.setFinal(resolver, ExternalResourceResolver.class, "repository", repo);
             Util.setFinal(accessor, accessor.getClass(), "delegate", repo);
         }
-        if (store != null) {
-
-        }
         return resolver;
     }
 
@@ -143,17 +140,18 @@ public class CustomRepository extends AbstractArtifactRepository implements Reso
             try {
                 URI uri = name.getUri();
                 URL url = uri.toURL();
-                Matcher match = URL_PATTERN.matcher(url.getPath());
+                Matcher matcher = URL_PATTERN.matcher(url.getPath());
+                if (!matcher.matches()) return null;
                 ArtifactIdentifier identifier = new DefaultArtifactIdentifier(
                         new DefaultModuleVersionIdentifier(
-                                match.group("group"),
-                                match.group("name"),
-                                match.group("version")
+                                matcher.group("group").replace('/', '.'),
+                                matcher.group("name"),
+                                matcher.group("version")
                         ),
-                        match.group("name"),
-                        match.group("extension"),
-                        match.group("extension"),
-                        match.group("classifier"));
+                        matcher.group("name"),
+                        matcher.group("extension"),
+                        matcher.group("extension"),
+                        matcher.group("classifier"));
                 return new CustomArtifactExternalResource(uri, identifier);
             } catch (MalformedURLException ex) {
                 throw new RuntimeException(ex);

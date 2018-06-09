@@ -33,4 +33,12 @@ dependencies {
     forgedevImplementation 'net.md-5:SpecialSource:1.8.2'
     forgedevImplementation sourceSets.api.output
     forgedevImplementation sourceSets.shared.output
+
+}
+
+jar {
+    from sourceSets.api.output
+    from sourceSets.shared.output
+    from sourceSets.moddev.output
+    from sourceSets.forgedev.output
 }

@@ -3,6 +3,8 @@ package net.minecraftforge.gradle.moddev;
 import net.minecraftforge.gradle.api.moddev.ForgeGradleAPI;
 import net.minecraftforge.gradle.shared.Constants;
 import net.minecraftforge.gradle.shared.mappings.MappingManagerImpl;
+import net.minecraftforge.gradle.shared.mappings.Remapper;
+import net.minecraftforge.gradle.shared.repo.RemappingRepo;
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -53,6 +55,8 @@ public class ForgeGradlePluginInstance {
 
     public void afterEvaluate() {
         mappings.addRepositories();
+        RemappingRepo.add(project, dependencyID, fgExt.minecraft.version, "remapping", Constants.MAVEN_FORGE, mappings);
+        Remapper.fixDependencies(project, mappings);
     }
 
 }
