@@ -40,7 +40,7 @@ class ForgeGradleDSL {
         }
 
         fg.project.repositories.metaClass.minecraftMaven = {
-            def repo = CustomRepository.add(fg.project.repositories, "mclauncher", "https://launcher.mojang.com/", new MCLauncherArtifactProvider(), null)
+            CustomRepository.add(fg.project.repositories, "mclauncher", "https://launcher.mojang.com/", new MCLauncherArtifactProvider(), null)
             fg.project.repositories.maven {
                 it.name = "mclibraries"
                 it.url = "https://libraries.minecraft.net"
