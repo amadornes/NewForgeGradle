@@ -54,19 +54,15 @@ public class RemappingRepo {
 
         @Override
         public IOSupplier<StreamedResource> getArtifact(ArtifactIdentifier identifier) throws IOException {
-            System.out.println("BEEP 1");
             String group = identifier.getModuleVersionIdentifier().getGroup();
             Matcher matcher = PATTERN_MAPPING.matcher(group);
-            System.out.println("BEEP 2");
             if (!matcher.matches()) return null;
-            System.out.println("BEEP 3");
 
             String provider = matcher.group("provider");
             String channel = matcher.group("channel");
             String version = matcher.group("version");
             String mappingName = matcher.group("mapping");
             String newGroup = matcher.group("group");
-            System.out.println("BEEP 4");
 
             Set<File> files = Util.resolveDependency(project, dependencyID, Maps.newHashMap(
                     "group", newGroup,
@@ -76,11 +72,7 @@ public class RemappingRepo {
                     "ext", identifier.getExtension(),
                     "transitive", false
             ));
-            System.out.println("BEEP 5");
             if (files.isEmpty()) return null;
-
-            System.out.println("BEEP 6");
-            System.out.println("Got files for " + identifier + " | ext: " + identifier.getExtension());
 
             if (identifier.getExtension().equals("pom")) {
                 try {
@@ -90,10 +82,8 @@ public class RemappingRepo {
                 }
             }
 
-            System.out.println("BEEP 7");
             MappingVersion mapping = new MappingVersion(provider, channel, version, mcVersion, mappingName);
             byte[] remapped = Remapper.remapBytes(project, dependencyID, mapping, files.iterator().next());
-            System.out.println("BEEP 8");
             return () -> new StreamedResource.ByteArrayStreamedResource(remapped);
         }
 

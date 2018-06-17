@@ -28,14 +28,17 @@ public class MappingRepo {
         }
 
         private IOSupplier<StreamedResource> getMapping(ArtifactIdentifier identifier) {
-            MappingVersion version = MappingVersion.fromMavenArtifactIdentifier(identifier, mcVersion);
-            if (version == null) return null;
-            byte[] mapping = manager.computeMapping(version);
+            MappingVersion mappingVersion = MappingVersion.fromMavenArtifactIdentifier(identifier, mcVersion);
+            if (mappingVersion == null) return null;
+            byte[] mapping = manager.computeMapping(mappingVersion);
             if (mapping == null) return null;
             return () -> new StreamedResource.ByteArrayStreamedResource(mapping);
         }
 
         private IOSupplier<StreamedResource> getPOM(ArtifactIdentifier identifier) {
+            MappingVersion mappingVersion = MappingVersion.fromMavenArtifactIdentifier(identifier, mcVersion);
+            if (mappingVersion == null) return null;
+
             String group = identifier.getModuleVersionIdentifier().getGroup();
             String name = identifier.getModuleVersionIdentifier().getName();
             String version = identifier.getModuleVersionIdentifier().getVersion();
