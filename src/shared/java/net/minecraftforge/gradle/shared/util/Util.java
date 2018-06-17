@@ -23,9 +23,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -144,50 +141,6 @@ public class Util {
         Jar inputJar = Jar.init(input);
         remapperSupplier.apply(inputJar).remapJar(inputJar, output);
         inputJar.close();
-    }
-
-    /**
-     * Sets the value of a final field (can be private).
-     */
-    public static void setFinal(Object target, Class<?> type, String name, Object value) {
-        try {
-            Field field = type.getDeclaredField(name);
-            field.setAccessible(true);
-
-            Field modifiers = Field.class.getDeclaredField("modifiers");
-            modifiers.setAccessible(true);
-            modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-            field.set(target, value);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    /**
-     * Gets the value of a field (can be private).
-     */
-    public static <T> T get(Object target, Class<?> type, String name) {
-        try {
-            Field field = type.getDeclaredField(name);
-            field.setAccessible(true);
-            return (T) field.get(target);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    /**
-     * Invokes a method (can be private).
-     */
-    public static <T> T invoke(Object target, Class<?> type, String name, Object... args) {
-        try {
-            Method method = type.getDeclaredMethod(name);
-            method.setAccessible(true);
-            return (T) method.invoke(target, args);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
     }
 
     /**

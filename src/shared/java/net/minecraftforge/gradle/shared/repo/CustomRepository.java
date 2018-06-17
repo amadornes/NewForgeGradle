@@ -3,7 +3,7 @@ package net.minecraftforge.gradle.shared.repo;
 import com.google.common.io.CountingInputStream;
 import net.minecraftforge.gradle.shared.util.IOFunction;
 import net.minecraftforge.gradle.shared.util.IOSupplier;
-import net.minecraftforge.gradle.shared.util.Util;
+import net.minecraftforge.gradle.shared.util.ReflectionUtils;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectCollection;
 import org.gradle.api.Transformer;
@@ -32,7 +32,6 @@ import org.gradle.internal.resource.ExternalResourceWriteResult;
 import org.gradle.internal.resource.ReadableContent;
 import org.gradle.internal.resource.ResourceExceptions;
 import org.gradle.internal.resource.metadata.ExternalResourceMetaData;
-import org.gradle.internal.resource.transfer.CacheAwareExternalResourceAccessor;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -110,13 +109,11 @@ public class CustomRepository extends AbstractArtifactRepository implements Reso
         if (provider != null) {
             // Create a repo
             ExternalResourceRepository repo = new StreamingRepo();
-            // Get the fields we want to modify
-            ExternalResourceArtifactResolver artifactResolver = Util.invoke(resolver, ExternalResourceResolver.class, "createArtifactResolver");
-            CacheAwareExternalResourceAccessor accessor = Util.get(artifactResolver, artifactResolver.getClass(), "resourceAccessor");
-            // Inject our custom repository into the resolver
-            Util.setFinal(artifactResolver, artifactResolver.getClass(), "repository", repo);
-            Util.setFinal(resolver, ExternalResourceResolver.class, "repository", repo);
-            Util.setFinal(accessor, accessor.getClass(), "delegate", repo);
+
+            ExternalResourceArtifactResolver artifactResolver = ReflectionUtils.invoke(resolver, ExternalResourceResolver.class, "createArtifactResolver");
+            ReflectionUtils.alter(resolver, "repository", prev -> repo);
+            ReflectionUtils.alter(resolver, "mavenMetaDataLoader.cacheAwareExternalResourceAccessor.delegate", prev -> repo);
+            ReflectionUtils.alter(artifactResolver, "repository", prev -> repo);
         }
         return resolver;
     }
