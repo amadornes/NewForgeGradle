@@ -13,7 +13,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -98,6 +98,8 @@ public class POMBuilder {
             project.appendChild(dependencies);
         }
 
+        doc.normalizeDocument();
+
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         DOMSource source = new DOMSource(doc);
@@ -117,7 +119,7 @@ public class POMBuilder {
 
     public class Dependencies {
 
-        private final Set<Dependency> dependencies = new HashSet<>();
+        private final Set<Dependency> dependencies = new LinkedHashSet<>();
 
         private Dependencies() {
         }
