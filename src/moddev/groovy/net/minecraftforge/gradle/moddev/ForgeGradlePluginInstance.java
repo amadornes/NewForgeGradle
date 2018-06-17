@@ -44,7 +44,8 @@ public class ForgeGradlePluginInstance {
     public void afterEvaluate() {
         mappings.addRepositories();
         MappingRepo.add(project, mappings, fgExt.minecraft.version, "mappings", "https://amadorn.es");
-        RemappingRepo.add(project, dependencyID, fgExt.minecraft.version, "remapping", "https://amadornes.com");
+        RemappingRepo.add(project, dependencyID, fgExt.mappings.provider, fgExt.mappings.channel, fgExt.mappings.version,
+                fgExt.minecraft.version, "remapping", "https://amadornes.com");
         Remapper.fixDependencies(project, dependencyID);
     }
 

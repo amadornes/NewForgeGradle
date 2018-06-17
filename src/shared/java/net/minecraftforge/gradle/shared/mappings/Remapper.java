@@ -127,8 +127,7 @@ public class Remapper {
                     ModuleDependency moduleDep = (ModuleDependency) remDep.getDependency();
                     MappingVersion mapping = remDep.getMapping();
 
-                    String newGroup = "remapped." + mapping.getProvider() + "." + mapping.getChannel() + "."
-                            + mapping.getVersion() + "." + mapping.getMapping() + "." + remDep.getDependency().getGroup();
+                    String newGroup = "remap." + mapping.getMapping() + "." + remDep.getDependency().getGroup();
 
                     ModuleDependency newDep = (ModuleDependency) project.getDependencies().create(Maps.newHashMap(
                             "group", newGroup,

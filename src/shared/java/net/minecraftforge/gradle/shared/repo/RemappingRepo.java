@@ -33,22 +33,27 @@ import java.util.regex.Pattern;
 public class RemappingRepo {
 
     private static final Pattern PATTERN_MAPPING = Pattern.compile(
-            "^remapped\\.(?<provider>[^.]+)\\.(?<channel>[^.]+)\\.(?<version>[^.]+)\\.(?<mapping>[^.]+)\\.(?<group>.*)$");
+            "^remap\\.(?<mapping>[^.]+)\\.(?<group>.*)$");
 
-    public static CustomRepository add(Project project, AtomicInteger dependencyID, String mcVersion, String name, Object url) {
+    public static CustomRepository add(Project project, AtomicInteger dependencyID, String provider, String channel,
+                                       String version, String mcVersion, String name, Object url) {
         RepositoryHandler handler = project.getRepositories();
-        return CustomRepository.add(handler, name, url, new ArtifactProvider(project, dependencyID, mcVersion), null);
+        return CustomRepository.add(handler, name, url, new ArtifactProvider(project, dependencyID, provider, channel, version, mcVersion), null);
     }
 
     private static class ArtifactProvider implements CustomRepository.ArtifactProvider {
 
         private final Project project;
         private final AtomicInteger dependencyID;
-        private String mcVersion;
+        private final String provider, channel, version, mcVersion;
 
-        private ArtifactProvider(Project project, AtomicInteger dependencyID, String mcVersion) {
+        private ArtifactProvider(Project project, AtomicInteger dependencyID,
+                                 String provider, String channel, String version, String mcVersion) {
             this.project = project;
             this.dependencyID = dependencyID;
+            this.provider = provider;
+            this.channel = channel;
+            this.version = version;
             this.mcVersion = mcVersion;
         }
 
@@ -58,9 +63,6 @@ public class RemappingRepo {
             Matcher matcher = PATTERN_MAPPING.matcher(group);
             if (!matcher.matches()) return null;
 
-            String provider = matcher.group("provider");
-            String channel = matcher.group("channel");
-            String version = matcher.group("version");
             String mappingName = matcher.group("mapping");
             String newGroup = matcher.group("group");
 

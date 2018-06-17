@@ -68,19 +68,13 @@ class ForgeGradleDSL {
             }))
         }
         fg.project.dependencies.metaClass.forge = { String version ->
-            fg.project.dependencies.remap(
-                    "net.minecraftforge:forge:${fg.fgExt.minecraft.version}-${version}:universal"
-                    , mapping: 'notch-mcp')
+            fg.project.dependencies.remap("net.minecraftforge:forge:${fg.fgExt.minecraft.version}-${version}:universal", mapping: 'notch-mcp')
         }
         fg.project.dependencies.metaClass.minecraftClient = { String version ->
-//            fg.project.dependencies.remap(
-            "net.minecraft:client:${fg.fgExt.minecraft.version}"
-//                    , mapping: 'notch-mcp')
+            fg.project.dependencies.remap("net.minecraft:client:${fg.fgExt.minecraft.version}", mapping: 'notch-mcp')
         }
         fg.project.dependencies.metaClass.minecraftServer = { String version ->
-//            fg.project.dependencies.remap(
-            "net.minecraft:server-pure:${fg.fgExt.minecraft.version}"
-//                    , mapping: 'notch-mcp')
+            fg.project.dependencies.remap("net.minecraft:server-pure:${fg.fgExt.minecraft.version}", mapping: 'notch-mcp')
         }
     }
 
