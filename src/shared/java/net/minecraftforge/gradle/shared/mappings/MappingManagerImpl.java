@@ -4,7 +4,7 @@ import net.minecraftforge.gradle.api.mapping.MappingEntry;
 import net.minecraftforge.gradle.api.mapping.MappingManager;
 import net.minecraftforge.gradle.api.mapping.MappingProvider;
 import net.minecraftforge.gradle.api.mapping.MappingVersion;
-import net.minecraftforge.gradle.shared.util.Util;
+import net.minecraftforge.gradle.shared.util.DependencyResolver;
 import org.gradle.api.Project;
 
 import java.io.ByteArrayOutputStream;
@@ -12,18 +12,17 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MappingManagerImpl implements MappingManager {
 
     private final Project project;
-    private final AtomicInteger counter;
+    private final DependencyResolver dependencyResolver;
 
     private final Map<String, MappingProvider> mappingProviders = new HashMap<>();
 
-    public MappingManagerImpl(Project project, AtomicInteger counter) {
+    public MappingManagerImpl(Project project, DependencyResolver dependencyResolver) {
         this.project = project;
-        this.counter = counter;
+        this.dependencyResolver = dependencyResolver;
     }
 
     public void addRepositories() {
@@ -62,7 +61,7 @@ public class MappingManagerImpl implements MappingManager {
 
         Map<Object, Object> dependencies = provider.getDependencies(version);
         Map<MappingEntry, MappingEntry> mappings = provider.getMapping(version,
-                name -> Util.resolveDependency(project, counter, dependencies.get(name)).iterator().next());
+                name -> dependencyResolver.resolveDependency(dependencies.get(name)).iterator().next());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintWriter pw = new PrintWriter(baos);

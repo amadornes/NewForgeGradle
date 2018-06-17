@@ -2,8 +2,8 @@ package net.minecraftforge.gradle.shared.repo;
 
 import net.minecraftforge.gradle.api.mapping.MappingVersion;
 import net.minecraftforge.gradle.shared.mappings.Remapper;
+import net.minecraftforge.gradle.shared.util.DependencyResolver;
 import net.minecraftforge.gradle.shared.util.IOSupplier;
-import net.minecraftforge.gradle.shared.util.Util;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ArtifactIdentifier;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
@@ -28,31 +28,26 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class RemappingRepo {
 
-    private static final Pattern PATTERN_MAPPING = Pattern.compile(
-            "^remap\\.(?<mapping>[^.]+)\\.(?<group>.*)$");
+    private static final Pattern PATTERN_MAPPING = Pattern.compile("^remap\\.(?<mapping>[^.]+)\\.(?<group>.*)$");
 
-    public static CustomRepository add(Project project, AtomicInteger dependencyID, String provider, String channel,
+    public static CustomRepository add(Project project, DependencyResolver dependencyResolver, String provider, String channel,
                                        String version, String mcVersion, String name, Object url) {
         RepositoryHandler handler = project.getRepositories();
-        return CustomRepository.add(handler, name, url, new ArtifactProvider(project, dependencyID, provider, channel, version, mcVersion), null);
+        return CustomRepository.add(handler, name, url, new ArtifactProvider(dependencyResolver, provider, channel, version, mcVersion), null);
     }
 
     private static class ArtifactProvider implements CustomRepository.ArtifactProvider {
 
-        private final Project project;
-        private final AtomicInteger dependencyID;
+        private final DependencyResolver dependencyResolver;
         private final String provider, channel, version, mcVersion;
 
-        private ArtifactProvider(Project project, AtomicInteger dependencyID,
-                                 String provider, String channel, String version, String mcVersion) {
-            this.project = project;
-            this.dependencyID = dependencyID;
+        private ArtifactProvider(DependencyResolver dependencyResolver, String provider, String channel, String version, String mcVersion) {
+            this.dependencyResolver = dependencyResolver;
             this.provider = provider;
             this.channel = channel;
             this.version = version;
@@ -68,7 +63,7 @@ public class RemappingRepo {
             String mappingName = matcher.group("mapping");
             String newGroup = matcher.group("group");
 
-            Set<File> files = Util.resolveDependency(project, dependencyID, Maps.newHashMap(
+            Set<File> files = dependencyResolver.resolveDependency(Maps.newHashMap(
                     "group", newGroup,
                     "name", identifier.getModuleVersionIdentifier().getName(),
                     "version", identifier.getModuleVersionIdentifier().getVersion(),
@@ -87,8 +82,8 @@ public class RemappingRepo {
             }
 
             MappingVersion mapping = new MappingVersion(provider, channel, version, mcVersion, mappingName);
-            Pair<IOSupplier<byte[]>, HashValue> remapped = Remapper.lazyRemapBytes(project, dependencyID, mapping, files.iterator().next());
-            return () -> new StreamedResource.ByteArrayStreamedResource(remapped.getLeft());
+            Pair<IOSupplier<byte[]>, HashValue> remapped = Remapper.lazyRemapBytes(dependencyResolver, mapping, files.iterator().next());
+            return () -> StreamedResource.ofByteSupplier(remapped.getLeft());
         }
 
         private IOSupplier<StreamedResource> fixPOM(File pomFile, String group) throws IOException, SAXException, ParserConfigurationException, TransformerException {
@@ -114,7 +109,7 @@ public class RemappingRepo {
             StreamResult result = new StreamResult(baos);
             transformer.transform(source, result);
 
-            return () -> new StreamedResource.ByteArrayStreamedResource(baos.toByteArray());
+            return () -> StreamedResource.ofBytes(baos.toByteArray());
         }
 
     }

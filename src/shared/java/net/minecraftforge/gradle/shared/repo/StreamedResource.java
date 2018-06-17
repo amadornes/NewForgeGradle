@@ -23,6 +23,18 @@ import java.util.function.Supplier;
  */
 public interface StreamedResource extends Closeable {
 
+    static URLStreamedResource ofURL(URL url, long length, @Nullable HashValue hash) throws IOException {
+        return new URLStreamedResource(url, length, hash);
+    }
+
+    static ByteArrayStreamedResource ofBytes(byte[] bytes) {
+        return new ByteArrayStreamedResource(() -> bytes);
+    }
+
+    static ByteArrayStreamedResource ofByteSupplier(IOSupplier<byte[]> supplier) {
+        return new ByteArrayStreamedResource(supplier);
+    }
+
     InputStream getStream() throws IOException;
 
     ExternalResourceMetaData getMetadata(URI uri);
@@ -37,11 +49,7 @@ public interface StreamedResource extends Closeable {
         @Nullable
         private final HashValue hash;
 
-        public URLStreamedResource(URL url) throws IOException {
-            this(url, -1, null);
-        }
-
-        public URLStreamedResource(URL url, long length, @Nullable HashValue hash) throws IOException {
+        private URLStreamedResource(URL url, long length, @Nullable HashValue hash) throws IOException {
             this.connection = url.openConnection();
             this.hash = hash;
             this.length = length != -1 ? length : this.connection.getContentLengthLong();
@@ -70,11 +78,7 @@ public interface StreamedResource extends Closeable {
         private HashValue hash;
         private InputStream stream;
 
-        public ByteArrayStreamedResource(byte[] bytes) {
-            this(() -> bytes);
-        }
-
-        public ByteArrayStreamedResource(IOSupplier<byte[]> byteSupplier) {
+        private ByteArrayStreamedResource(IOSupplier<byte[]> byteSupplier) {
             this.byteSupplier = new Supplier<byte[]>() {
                 private byte[] bytes = null;
 

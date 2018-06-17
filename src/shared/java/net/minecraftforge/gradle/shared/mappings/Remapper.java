@@ -6,6 +6,7 @@ import net.md_5.specialsource.provider.InheritanceProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.api.mapping.MappingVersion;
+import net.minecraftforge.gradle.shared.util.DependencyResolver;
 import net.minecraftforge.gradle.shared.util.IOSupplier;
 import net.minecraftforge.gradle.shared.util.LazyFileCollection;
 import net.minecraftforge.gradle.shared.util.Util;
@@ -22,7 +23,6 @@ import org.gradle.internal.hash.HashValue;
 import org.gradle.internal.impldep.com.beust.jcommander.internal.Maps;
 import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -31,28 +31,24 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Utility class that handles remapping jar files and project dependencies.
  */
 public class Remapper {
 
-    public static Pair<IOSupplier<byte[]>, HashValue> lazyRemapBytes(Project project, AtomicInteger dependencyID, MappingVersion mapping, File file) throws IOException {
-        Pair<IOSupplier<File>, HashValue> tmp = lazyRemapTmp(project, dependencyID, mapping, file);
+    public static Pair<IOSupplier<byte[]>, HashValue> lazyRemapBytes(DependencyResolver dependencyResolver, MappingVersion mapping, File file) {
+        Pair<IOSupplier<File>, HashValue> tmp = lazyRemapTmp(dependencyResolver, mapping, file);
         return Pair.of(() -> {
             FileInputStream fis = new FileInputStream(tmp.getLeft().get());
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            IOUtils.copy(fis, baos);
-            baos.close();
+            byte[] bytes = IOUtils.toByteArray(fis);
             fis.close();
-            return baos.toByteArray();
+            return bytes;
         }, tmp.getRight());
     }
 
-    public static Pair<IOSupplier<File>, HashValue> lazyRemapTmp(Project project, AtomicInteger dependencyID, MappingVersion mapping, File file) throws IOException {
-        File mappingFile = Util.resolveDependency(project, dependencyID, mapping.asMavenArtifactName()).iterator().next();
-        System.out.println("Mapping hash: " + HashUtil.sha1(mappingFile).asHexString());
+    public static Pair<IOSupplier<File>, HashValue> lazyRemapTmp(DependencyResolver dependencyResolver, MappingVersion mapping, File file) {
+        File mappingFile = dependencyResolver.resolveDependency(mapping.asMavenArtifactName()).iterator().next();
         return Pair.of(() -> {
             File tmp = File.createTempFile("remap", null);
             Util.applySpecialSource(file, tmp, jar -> {
@@ -64,9 +60,9 @@ public class Remapper {
         }, HashUtil.sha1(mappingFile));
     }
 
-    public static Set<File> remap(Project project, AtomicInteger dependencyID, MappingVersion mapping, Set<File> files) {
+    public static Set<File> remap(DependencyResolver dependencyResolver, MappingVersion mapping, Set<File> files) {
         Set<File> results = new HashSet<>();
-        File mappingFile = Util.resolveDependency(project, dependencyID, mapping.asMavenArtifactName()).iterator().next();
+        File mappingFile = dependencyResolver.resolveDependency(mapping.asMavenArtifactName()).iterator().next();
         String mappingHash = mappingFile.getParentFile().getName();
 
         for (File file : files) {
@@ -121,7 +117,7 @@ public class Remapper {
      * Replaces any temporary {@link RemappedDependency} in the project
      * with the correct remapped version of that dependency.
      */
-    public static void fixDependencies(Project project, AtomicInteger dependencyID) {
+    public static void fixDependencies(Project project, DependencyResolver dependencyResolver) {
         for (Configuration cfg : project.getConfigurations()) {
             DependencySet dependencies = cfg.getDependencies();
             Map<Dependency, Dependency> replacements = new HashMap<>();
@@ -130,7 +126,7 @@ public class Remapper {
                 RemappedDependency remDep = (RemappedDependency) dep;
                 if (remDep.getDependency() instanceof FileCollectionDependency) {
                     Set<File> files = ((FileCollectionDependency) remDep.getDependency()).getFiles().getFiles();
-                    FileCollection remapped = new LazyFileCollection("deobf dep", () -> remap(project, dependencyID, remDep.getMapping(), files));
+                    FileCollection remapped = new LazyFileCollection("deobf dep", () -> remap(dependencyResolver, remDep.getMapping(), files));
                     replacements.put(dep, project.getDependencies().create(remapped));
                 } else if (remDep.getDependency() instanceof ModuleDependency) {
                     ModuleDependency moduleDep = (ModuleDependency) remDep.getDependency();

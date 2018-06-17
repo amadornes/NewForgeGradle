@@ -83,7 +83,7 @@ public class MCLauncherArtifactProvider extends CustomRepository.ArtifactProvide
 
         // Create a streamed resource with that metadata
         URL url = new URL(urlString);
-        return () -> new StreamedResource.URLStreamedResource(url, size, hash);
+        return () -> StreamedResource.ofURL(url, size, hash);
     }
 
     private IOSupplier<StreamedResource> getPureServerArtifact(ArtifactIdentifier identifier) throws IOException {
@@ -114,7 +114,7 @@ public class MCLauncherArtifactProvider extends CustomRepository.ArtifactProvide
 //        hashes.put(getHashID(identifier), HashUtil.sha1(baos.toByteArray()));
 
         // Create a streamed resource from the resulting bytes
-        return () -> new StreamedResource.ByteArrayStreamedResource(baos.toByteArray());
+        return () -> StreamedResource.ofBytes(baos.toByteArray());
     }
 
     private IOSupplier<StreamedResource> getPOM(ArtifactIdentifier identifier) {
@@ -163,7 +163,7 @@ public class MCLauncherArtifactProvider extends CustomRepository.ArtifactProvide
         // Return the resulting POM file
         String pom = builder.tryBuild();
         if (pom == null) return null;
-        return () -> new StreamedResource.ByteArrayStreamedResource(pom.getBytes());
+        return () -> StreamedResource.ofBytes(pom.getBytes());
     }
 
     private boolean isLibraryAllowed(JsonObject lib) {

@@ -6,9 +6,8 @@ import net.minecraftforge.gradle.shared.mappings.MappingManagerImpl;
 import net.minecraftforge.gradle.shared.mappings.Remapper;
 import net.minecraftforge.gradle.shared.repo.MappingRepo;
 import net.minecraftforge.gradle.shared.repo.RemappingRepo;
+import net.minecraftforge.gradle.shared.util.DependencyResolver;
 import org.gradle.api.Project;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A single instance of the ForgeGradle plugin.
@@ -19,18 +18,17 @@ public class ForgeGradlePluginInstance {
     public final ForgeGradleAPI api = new ForgeGradleAPIImpl(this);
 
     // Internal systems
+    public final DependencyResolver dependencyResolver;
     public final MappingManagerImpl mappings;
 
     // Extensions
     public ForgeGradleExtension fgExt;
 
-    // Miscellaneous
-    private AtomicInteger dependencyID = new AtomicInteger(0); // Stores the current dependency ID
-
     ForgeGradlePluginInstance(Project project) {
         this.project = project;
+        this.dependencyResolver = new DependencyResolver(project);
+        this.mappings = new MappingManagerImpl(project, dependencyResolver);
 
-        this.mappings = new MappingManagerImpl(project, dependencyID);
     }
 
     public void init() {
@@ -44,9 +42,9 @@ public class ForgeGradlePluginInstance {
     public void afterEvaluate() {
         mappings.addRepositories();
         MappingRepo.add(project, mappings, fgExt.minecraft.version, "mappings", "https://amadorn.es");
-        RemappingRepo.add(project, dependencyID, fgExt.mappings.provider, fgExt.mappings.channel, fgExt.mappings.version,
+        RemappingRepo.add(project, dependencyResolver, fgExt.mappings.provider, fgExt.mappings.channel, fgExt.mappings.version,
                 fgExt.minecraft.version, "remapping", "https://amadornes.com");
-        Remapper.fixDependencies(project, dependencyID);
+        Remapper.fixDependencies(project, dependencyResolver);
     }
 
 }

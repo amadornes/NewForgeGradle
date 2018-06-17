@@ -3,7 +3,6 @@ package net.minecraftforge.gradle.shared.repo;
 import net.minecraftforge.gradle.api.mapping.MappingVersion;
 import net.minecraftforge.gradle.shared.mappings.MappingManagerImpl;
 import net.minecraftforge.gradle.shared.util.IOSupplier;
-import net.minecraftforge.gradle.shared.util.POMBuilder;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ArtifactIdentifier;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
@@ -24,7 +23,11 @@ public class MappingRepo {
             this.manager = manager;
             this.mcVersion = mcVersion;
             addExtensionProvider("srg", this::getMapping);
-            addExtensionProvider("pom", this::getPOM);
+        }
+
+        @Override
+        public boolean supportsPOMs() {
+            return false;
         }
 
         private IOSupplier<StreamedResource> getMapping(ArtifactIdentifier identifier) {
@@ -32,23 +35,7 @@ public class MappingRepo {
             if (mappingVersion == null) return null;
             byte[] mapping = manager.computeMapping(mappingVersion);
             if (mapping == null) return null;
-            return () -> new StreamedResource.ByteArrayStreamedResource(mapping);
-        }
-
-        private IOSupplier<StreamedResource> getPOM(ArtifactIdentifier identifier) {
-            MappingVersion mappingVersion = MappingVersion.fromMavenArtifactIdentifier(identifier, mcVersion);
-            if (mappingVersion == null) return null;
-
-            String group = identifier.getModuleVersionIdentifier().getGroup();
-            String name = identifier.getModuleVersionIdentifier().getName();
-            String version = identifier.getModuleVersionIdentifier().getVersion();
-
-            POMBuilder builder = new POMBuilder(group, name, version);
-            builder.description(name);
-
-            String pom = builder.tryBuild();
-            if (pom == null) return null;
-            return () -> new StreamedResource.ByteArrayStreamedResource(pom.getBytes());
+            return () -> StreamedResource.ofBytes(mapping);
         }
 
     }
