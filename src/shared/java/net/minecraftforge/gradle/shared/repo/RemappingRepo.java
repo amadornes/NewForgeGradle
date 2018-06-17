@@ -7,6 +7,8 @@ import net.minecraftforge.gradle.shared.util.Util;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ArtifactIdentifier;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
+import org.gradle.internal.Pair;
+import org.gradle.internal.hash.HashValue;
 import org.gradle.internal.impldep.com.beust.jcommander.internal.Maps;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -85,8 +87,8 @@ public class RemappingRepo {
             }
 
             MappingVersion mapping = new MappingVersion(provider, channel, version, mcVersion, mappingName);
-            byte[] remapped = Remapper.remapBytes(project, dependencyID, mapping, files.iterator().next());
-            return () -> new StreamedResource.ByteArrayStreamedResource(remapped);
+            Pair<IOSupplier<byte[]>, HashValue> remapped = Remapper.lazyRemapBytes(project, dependencyID, mapping, files.iterator().next());
+            return () -> new StreamedResource.ByteArrayStreamedResource(remapped.getLeft());
         }
 
         private IOSupplier<StreamedResource> fixPOM(File pomFile, String group) throws IOException, SAXException, ParserConfigurationException, TransformerException {

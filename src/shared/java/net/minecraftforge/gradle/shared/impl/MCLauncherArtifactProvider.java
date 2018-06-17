@@ -9,7 +9,6 @@ import net.minecraftforge.gradle.shared.util.IOSupplier;
 import net.minecraftforge.gradle.shared.util.POMBuilder;
 import net.minecraftforge.gradle.shared.util.Util;
 import org.gradle.api.artifacts.ArtifactIdentifier;
-import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.hash.HashValue;
 import org.gradle.internal.impldep.com.google.gson.JsonElement;
 import org.gradle.internal.impldep.com.google.gson.JsonObject;
@@ -18,12 +17,6 @@ import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -35,13 +28,12 @@ import java.util.zip.ZipEntry;
  */
 public class MCLauncherArtifactProvider extends CustomRepository.ArtifactProvider.Simple {
 
-    public static final DateFormat DATE_FORMAT = new SimpleDateFormat("YYYY-mm-dd HH:MM:SS");
     private final Cache<String, JsonObject> manifests = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build();
-    private final Map<String, HashValue> hashes = new HashMap<>();
+//    private final Map<String, HashValue> hashes = new HashMap<>();
 
     public MCLauncherArtifactProvider() {
         addExtensionProvider("jar", this::getJar);
-        addExtensionProvider("jar.sha1", this::getJarHash);
+//        addExtensionProvider("jar.sha1", this::getJarHash);
         addExtensionProvider("pom", this::getPOM);
     }
 
@@ -62,19 +54,20 @@ public class MCLauncherArtifactProvider extends CustomRepository.ArtifactProvide
         return null;
     }
 
-    private IOSupplier<StreamedResource> getJarHash(ArtifactIdentifier identifier) throws IOException {
-        String hashID = getHashID(identifier);
-        HashValue hash = hashes.get(hashID);
-        if (hash == null) {
-            IOSupplier<StreamedResource> supplier = getJar(identifier);
-            if (supplier == null) return null;
-            StreamedResource res = supplier.get();
-            hash = res.getMetadata(null).getSha1();
-            hashes.put(hashID, hash);
-        }
-        byte[] hashBytes = hash.asHexString().getBytes();
-        return () -> new StreamedResource.ByteArrayStreamedResource(hashBytes);
-    }
+//    private IOSupplier<StreamedResource> getJarHash(ArtifactIdentifier identifier) throws IOException {
+//        System.out.println("Asking for hash of " + identifier + " ;_;");
+//        String hashID = getHashID(identifier);
+//        HashValue hash = hashes.get(hashID);
+//        if (hash == null) {
+//            IOSupplier<StreamedResource> supplier = getJar(identifier);
+//            if (supplier == null) return null;
+//            StreamedResource res = supplier.get();
+//            hash = res.getMetadata(null).getSha1();
+//            hashes.put(hashID, hash);
+//        }
+//        byte[] hashBytes = hash.asHexString().getBytes();
+//        return () -> new StreamedResource.ByteArrayStreamedResource(hashBytes);
+//    }
 
     private IOSupplier<StreamedResource> getClientArtifact(ArtifactIdentifier identifier) throws IOException {
         String version = identifier.getModuleVersionIdentifier().getVersion();
@@ -86,19 +79,11 @@ public class MCLauncherArtifactProvider extends CustomRepository.ArtifactProvide
         String urlString = artifact.get("url").getAsString();
         long size = artifact.get("size").getAsLong();
         HashValue hash = HashValue.parse(artifact.get("sha1").getAsString());
-        try {
-            String dateString = manifest.get("time").getAsString().replace('T', ' ');
-            dateString = dateString.substring(0, dateString.indexOf('+'));
-            Date date = DATE_FORMAT.parse(dateString);
+//        hashes.put(getHashID(identifier), hash);
 
-            hashes.put(getHashID(identifier), hash);
-
-            // Create a streamed resource with that metadata
-            URL url = new URL(urlString);
-            return () -> new StreamedResource.URLStreamedResource(url, size, date, hash);
-        } catch (ParseException e) {
-            return null;
-        }
+        // Create a streamed resource with that metadata
+        URL url = new URL(urlString);
+        return () -> new StreamedResource.URLStreamedResource(url, size, hash);
     }
 
     private IOSupplier<StreamedResource> getPureServerArtifact(ArtifactIdentifier identifier) throws IOException {
@@ -126,7 +111,7 @@ public class MCLauncherArtifactProvider extends CustomRepository.ArtifactProvide
         os.close();
         is.close();
 
-        hashes.put(getHashID(identifier), HashUtil.sha1(baos.toByteArray()));
+//        hashes.put(getHashID(identifier), HashUtil.sha1(baos.toByteArray()));
 
         // Create a streamed resource from the resulting bytes
         return () -> new StreamedResource.ByteArrayStreamedResource(baos.toByteArray());

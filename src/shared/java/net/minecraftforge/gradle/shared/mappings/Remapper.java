@@ -6,6 +6,7 @@ import net.md_5.specialsource.provider.InheritanceProvider;
 import net.md_5.specialsource.provider.JarProvider;
 import net.md_5.specialsource.provider.JointProvider;
 import net.minecraftforge.gradle.api.mapping.MappingVersion;
+import net.minecraftforge.gradle.shared.util.IOSupplier;
 import net.minecraftforge.gradle.shared.util.LazyFileCollection;
 import net.minecraftforge.gradle.shared.util.Util;
 import org.gradle.api.Project;
@@ -15,6 +16,9 @@ import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.file.FileCollection;
+import org.gradle.internal.Pair;
+import org.gradle.internal.hash.HashUtil;
+import org.gradle.internal.hash.HashValue;
 import org.gradle.internal.impldep.com.beust.jcommander.internal.Maps;
 import org.gradle.internal.impldep.org.apache.commons.io.IOUtils;
 
@@ -34,25 +38,30 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Remapper {
 
-    public static byte[] remapBytes(Project project, AtomicInteger dependencyID, MappingVersion mapping, File file) throws IOException {
-        File tmp = remapTmp(project, dependencyID, mapping, file);
-        FileInputStream fis = new FileInputStream(tmp);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        IOUtils.copy(fis, baos);
-        baos.close();
-        fis.close();
-        return baos.toByteArray();
+    public static Pair<IOSupplier<byte[]>, HashValue> lazyRemapBytes(Project project, AtomicInteger dependencyID, MappingVersion mapping, File file) throws IOException {
+        Pair<IOSupplier<File>, HashValue> tmp = lazyRemapTmp(project, dependencyID, mapping, file);
+        return Pair.of(() -> {
+            FileInputStream fis = new FileInputStream(tmp.getLeft().get());
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            IOUtils.copy(fis, baos);
+            baos.close();
+            fis.close();
+            return baos.toByteArray();
+        }, tmp.getRight());
     }
 
-    public static File remapTmp(Project project, AtomicInteger dependencyID, MappingVersion mapping, File file) throws IOException {
+    public static Pair<IOSupplier<File>, HashValue> lazyRemapTmp(Project project, AtomicInteger dependencyID, MappingVersion mapping, File file) throws IOException {
         File mappingFile = Util.resolveDependency(project, dependencyID, mapping.asMavenArtifactName()).iterator().next();
-        File tmp = File.createTempFile("remap", null);
-        Util.applySpecialSource(file, tmp, jar -> {
-            JointProvider inheritanceProvider = new JointProvider();
-            inheritanceProvider.add(new JarProvider(jar));
-            return createRemapper(Collections.singleton(mappingFile), inheritanceProvider);
-        });
-        return tmp;
+        System.out.println("Mapping hash: " + HashUtil.sha1(mappingFile).asHexString());
+        return Pair.of(() -> {
+            File tmp = File.createTempFile("remap", null);
+            Util.applySpecialSource(file, tmp, jar -> {
+                JointProvider inheritanceProvider = new JointProvider();
+                inheritanceProvider.add(new JarProvider(jar));
+                return createRemapper(Collections.singleton(mappingFile), inheritanceProvider);
+            });
+            return tmp;
+        }, HashUtil.sha1(mappingFile));
     }
 
     public static Set<File> remap(Project project, AtomicInteger dependencyID, MappingVersion mapping, Set<File> files) {

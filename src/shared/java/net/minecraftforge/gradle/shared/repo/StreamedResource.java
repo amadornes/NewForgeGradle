@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.shared.repo;
 
+import net.minecraftforge.gradle.shared.util.IOSupplier;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.hash.HashValue;
 import org.gradle.internal.resource.metadata.DefaultExternalResourceMetaData;
@@ -13,7 +14,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Date;
+import java.util.function.Supplier;
 
 /**
  * Interface that represents a resource which can be streamed.<br/>
@@ -34,19 +35,16 @@ public interface StreamedResource extends Closeable {
         private final URLConnection connection;
         private final long length;
         @Nullable
-        private final Date date;
-        @Nullable
         private final HashValue hash;
 
         public URLStreamedResource(URL url) throws IOException {
-            this(url, -1, null, null);
+            this(url, -1, null);
         }
 
-        public URLStreamedResource(URL url, long length, @Nullable Date date, @Nullable HashValue hash) throws IOException {
+        public URLStreamedResource(URL url, long length, @Nullable HashValue hash) throws IOException {
             this.connection = url.openConnection();
             this.hash = hash;
             this.length = length != -1 ? length : this.connection.getContentLengthLong();
-            this.date = date != null ? date : new Date(connection.getDate());
         }
 
         @Override
@@ -56,7 +54,7 @@ public interface StreamedResource extends Closeable {
 
         @Override
         public ExternalResourceMetaData getMetadata(URI uri) {
-            return new DefaultExternalResourceMetaData(uri, date, length, null, null, hash);
+            return new DefaultExternalResourceMetaData(uri, null, length, null, null, hash);
         }
 
         @Override
@@ -68,23 +66,61 @@ public interface StreamedResource extends Closeable {
 
     class ByteArrayStreamedResource implements StreamedResource {
 
-        private final byte[] bytes;
+        private final Supplier<byte[]> byteSupplier;
+        private HashValue hash;
         private InputStream stream;
 
         public ByteArrayStreamedResource(byte[] bytes) {
-            this.bytes = bytes;
+            this(() -> bytes);
+        }
+
+        public ByteArrayStreamedResource(IOSupplier<byte[]> byteSupplier) {
+            this.byteSupplier = new Supplier<byte[]>() {
+                private byte[] bytes = null;
+
+                @Override
+                public byte[] get() {
+                    if (bytes == null) {
+                        try {
+                            return bytes = byteSupplier.get();
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+                    return bytes;
+                }
+            };
+        }
+
+        public ByteArrayStreamedResource withHash(HashValue hash) {
+            this.hash = hash;
+            return this;
+        }
+
+        private byte[] getBytes() {
+            return byteSupplier.get();
         }
 
         @Override
         public InputStream getStream() {
-            if (stream == null) stream = new ByteArrayInputStream(bytes);
+            if (stream == null) stream = new ByteArrayInputStream(getBytes());
             return stream;
         }
 
         @Override
         public ExternalResourceMetaData getMetadata(URI uri) {
-            return new DefaultExternalResourceMetaData(uri, new Date().getTime(), bytes.length,
-                    null, null, HashUtil.sha1(bytes));
+            return new DefaultExternalResourceMetaData(uri, 0, 0) {
+                @Override
+                public long getContentLength() {
+                    return getBytes().length; // Handle lazily, we may only care about the hash
+                }
+
+                @Nullable
+                @Override
+                public HashValue getSha1() {
+                    return hash != null ? hash : HashUtil.sha1(getBytes());
+                }
+            };
         }
 
         @Override
