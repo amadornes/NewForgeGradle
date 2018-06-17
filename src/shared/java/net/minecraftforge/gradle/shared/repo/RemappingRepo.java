@@ -1,9 +1,8 @@
 package net.minecraftforge.gradle.shared.repo;
 
-import net.minecraftforge.gradle.api.mapping.MappingManager;
 import net.minecraftforge.gradle.api.mapping.MappingVersion;
 import net.minecraftforge.gradle.shared.mappings.Remapper;
-import net.minecraftforge.gradle.shared.util.StreamedResource;
+import net.minecraftforge.gradle.shared.util.IOSupplier;
 import net.minecraftforge.gradle.shared.util.Util;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ArtifactIdentifier;
@@ -36,38 +35,40 @@ public class RemappingRepo {
     private static final Pattern PATTERN_MAPPING = Pattern.compile(
             "^remapped\\.(?<provider>[^.]+)\\.(?<channel>[^.]+)\\.(?<version>[^.]+)\\.(?<mapping>[^.]+)\\.(?<group>.*)$");
 
-    public static CustomRepository add(Project project, AtomicInteger counter, String mcVersion, String name, Object url, MappingManager manager) {
+    public static CustomRepository add(Project project, AtomicInteger dependencyID, String mcVersion, String name, Object url) {
         RepositoryHandler handler = project.getRepositories();
-        return CustomRepository.add(handler, name, url, new ArtifactProvider(project, counter, manager, mcVersion), null);
+        return CustomRepository.add(handler, name, url, new ArtifactProvider(project, dependencyID, mcVersion), null);
     }
 
     private static class ArtifactProvider implements CustomRepository.ArtifactProvider {
 
         private final Project project;
-        private final AtomicInteger counter;
-        private final MappingManager manager;
+        private final AtomicInteger dependencyID;
         private String mcVersion;
 
-        public ArtifactProvider(Project project, AtomicInteger counter, MappingManager manager, String mcVersion) {
+        private ArtifactProvider(Project project, AtomicInteger dependencyID, String mcVersion) {
             this.project = project;
-            this.counter = counter;
-            this.manager = manager;
+            this.dependencyID = dependencyID;
             this.mcVersion = mcVersion;
         }
 
         @Override
-        public StreamedResource getArtifact(ArtifactIdentifier identifier) throws IOException {
+        public IOSupplier<StreamedResource> getArtifact(ArtifactIdentifier identifier) throws IOException {
+            System.out.println("BEEP 1");
             String group = identifier.getModuleVersionIdentifier().getGroup();
             Matcher matcher = PATTERN_MAPPING.matcher(group);
+            System.out.println("BEEP 2");
             if (!matcher.matches()) return null;
+            System.out.println("BEEP 3");
 
             String provider = matcher.group("provider");
             String channel = matcher.group("channel");
             String version = matcher.group("version");
             String mappingName = matcher.group("mapping");
             String newGroup = matcher.group("group");
+            System.out.println("BEEP 4");
 
-            Set<File> files = Util.resolveDependency(project, counter, Maps.newHashMap(
+            Set<File> files = Util.resolveDependency(project, dependencyID, Maps.newHashMap(
                     "group", newGroup,
                     "name", identifier.getModuleVersionIdentifier().getName(),
                     "version", identifier.getModuleVersionIdentifier().getVersion(),
@@ -75,7 +76,11 @@ public class RemappingRepo {
                     "ext", identifier.getExtension(),
                     "transitive", false
             ));
+            System.out.println("BEEP 5");
             if (files.isEmpty()) return null;
+
+            System.out.println("BEEP 6");
+            System.out.println("Got files for " + identifier + " | ext: " + identifier.getExtension());
 
             if (identifier.getExtension().equals("pom")) {
                 try {
@@ -85,12 +90,14 @@ public class RemappingRepo {
                 }
             }
 
+            System.out.println("BEEP 7");
             MappingVersion mapping = new MappingVersion(provider, channel, version, mcVersion, mappingName);
-            Set<File> remapped = Remapper.remap(manager, mapping, files);
-            return new StreamedResource.URLStreamedResource(remapped.iterator().next().toURL());
+            byte[] remapped = Remapper.remapBytes(project, dependencyID, mapping, files.iterator().next());
+            System.out.println("BEEP 8");
+            return () -> new StreamedResource.ByteArrayStreamedResource(remapped);
         }
 
-        private StreamedResource fixPOM(File pomFile, String group) throws IOException, SAXException, ParserConfigurationException, TransformerException {
+        private IOSupplier<StreamedResource> fixPOM(File pomFile, String group) throws IOException, SAXException, ParserConfigurationException, TransformerException {
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = docBuilder.parse(pomFile);
@@ -113,7 +120,7 @@ public class RemappingRepo {
             StreamResult result = new StreamResult(baos);
             transformer.transform(source, result);
 
-            return new StreamedResource.ByteArrayStreamedResource(baos.toByteArray());
+            return () -> new StreamedResource.ByteArrayStreamedResource(baos.toByteArray());
         }
 
     }

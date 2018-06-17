@@ -1,12 +1,11 @@
-package net.minecraftforge.gradle.shared.groovy
+package net.minecraftforge.gradle.moddev
 
 import net.minecraftforge.gradle.api.mapping.MappingProvider
 import net.minecraftforge.gradle.api.mapping.MappingVersion
-import net.minecraftforge.gradle.moddev.ForgeGradlePluginInstance
-import net.minecraftforge.gradle.shared.mappings.MCPMappingProvider
+import net.minecraftforge.gradle.shared.impl.MCLauncherArtifactProvider
+import net.minecraftforge.gradle.shared.impl.MCPMappingProvider
+import net.minecraftforge.gradle.shared.mappings.RemappedDependency
 import net.minecraftforge.gradle.shared.repo.CustomRepository
-import net.minecraftforge.gradle.shared.repo.MCLauncherArtifactProvider
-import net.minecraftforge.gradle.shared.util.RemappedDependency
 import org.gradle.api.Action
 
 class ForgeGradleDSL {
@@ -58,18 +57,31 @@ class ForgeGradleDSL {
                         fg.fgExt.mappings.version, fg.fgExt.minecraft.version, fg.fgExt.mappings.deobfMappings)
             }))
         }
-//        fg.project.dependencies.metaClass.remap = { Map args, Object target ->
-//            def dep = fg.project.dependencies.create(target)
-//            return Remapper.remapDependencyWithDefaults(fg, dep, args)
-//        }
-//
-//        fg.project.dependencies.metaClass.forge = { String version ->
-//            Supplier depSupplier = {
-//                return fg.project.dependencies.create("net.minecraftforge:forge:"
-//                        + fg.fgExt.minecraft.version + "-$version:universal")
-//            }
-//            return Remapper.remapDependencyWithDefaults(fg, depSupplier, [mapping: fg.fgExt.mappings.forgeMappings])
-//        }
+        fg.project.dependencies.metaClass.remap = { Map args, Object target ->
+            def dep = fg.project.dependencies.create(target)
+            return new RemappedDependency(dep, MappingVersion.lazy({
+                String provider = args.getOrDefault('provider', fg.fgExt.mappings.provider)
+                String channel = args.getOrDefault('channel', fg.fgExt.mappings.channel)
+                String version = args.getOrDefault('version', fg.fgExt.mappings.version)
+                String mapping = args.get('mapping')
+                return new MappingVersion(provider, channel, version, fg.fgExt.minecraft.version, mapping)
+            }))
+        }
+        fg.project.dependencies.metaClass.forge = { String version ->
+            fg.project.dependencies.remap(
+                    "net.minecraftforge:forge:${fg.fgExt.minecraft.version}-${version}:universal"
+                    , mapping: 'notch-mcp')
+        }
+        fg.project.dependencies.metaClass.minecraftClient = { String version ->
+//            fg.project.dependencies.remap(
+            "net.minecraft:client:${fg.fgExt.minecraft.version}"
+//                    , mapping: 'notch-mcp')
+        }
+        fg.project.dependencies.metaClass.minecraftServer = { String version ->
+//            fg.project.dependencies.remap(
+            "net.minecraft:server-pure:${fg.fgExt.minecraft.version}"
+//                    , mapping: 'notch-mcp')
+        }
     }
 
 }

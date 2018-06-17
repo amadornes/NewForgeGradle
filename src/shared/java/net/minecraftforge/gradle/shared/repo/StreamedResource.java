@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.shared.util;
+package net.minecraftforge.gradle.shared.repo;
 
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.hash.HashValue;

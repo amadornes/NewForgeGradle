@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.shared.mappings;
+package net.minecraftforge.gradle.shared.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

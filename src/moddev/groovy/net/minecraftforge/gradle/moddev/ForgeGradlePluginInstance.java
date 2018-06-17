@@ -4,12 +4,10 @@ import net.minecraftforge.gradle.api.moddev.ForgeGradleAPI;
 import net.minecraftforge.gradle.shared.Constants;
 import net.minecraftforge.gradle.shared.mappings.MappingManagerImpl;
 import net.minecraftforge.gradle.shared.mappings.Remapper;
+import net.minecraftforge.gradle.shared.repo.MappingRepo;
 import net.minecraftforge.gradle.shared.repo.RemappingRepo;
 import org.gradle.api.Project;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -27,8 +25,7 @@ public class ForgeGradlePluginInstance {
     public ForgeGradleExtension fgExt;
 
     // Miscellaneous
-    public AtomicInteger dependencyID = new AtomicInteger(0); // Stores the current dependency ID
-    public Set<File> refreshedDeps = new HashSet<>();
+    private AtomicInteger dependencyID = new AtomicInteger(0); // Stores the current dependency ID
 
     ForgeGradlePluginInstance(Project project) {
         this.project = project;
@@ -37,16 +34,7 @@ public class ForgeGradlePluginInstance {
     }
 
     public void init() {
-        // It's a pain, but we need to get the class at runtime and call the method.
-        // Java compiles first, then groovy, so the groovy class we're accessing here
-        // isn't available when the class is compiled, resulting in an error.
-        // We're just calling a method, though, so it should be fine.
-        try {
-            Class<?> clazz = Class.forName("net.minecraftforge.gradle.shared.groovy.ForgeGradleDSL");
-            clazz.getMethod("extendDSL", ForgeGradlePluginInstance.class).invoke(null, this);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        ForgeGradleDSL.extendDSL(this);
     }
 
     public void initExtensions() {
@@ -55,8 +43,9 @@ public class ForgeGradlePluginInstance {
 
     public void afterEvaluate() {
         mappings.addRepositories();
-        RemappingRepo.add(project, dependencyID, fgExt.minecraft.version, "remapping", Constants.MAVEN_FORGE, mappings);
-        Remapper.fixDependencies(project, mappings);
+        MappingRepo.add(project, mappings, fgExt.minecraft.version, "mappings", "https://amadorn.es");
+        RemappingRepo.add(project, dependencyID, fgExt.minecraft.version, "remapping", "https://amadornes.com");
+        Remapper.fixDependencies(project, dependencyID);
     }
 
 }

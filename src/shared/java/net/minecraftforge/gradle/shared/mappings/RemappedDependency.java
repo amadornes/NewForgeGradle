@@ -1,4 +1,4 @@
-package net.minecraftforge.gradle.shared.util;
+package net.minecraftforge.gradle.shared.mappings;
 
 import net.minecraftforge.gradle.api.mapping.MappingVersion;
 import org.gradle.api.Incubating;

@@ -1,5 +1,6 @@
 package net.minecraftforge.gradle.api.mapping;
 
+import org.gradle.api.artifacts.ArtifactIdentifier;
 import org.gradle.internal.impldep.org.apache.commons.lang.builder.ToStringBuilder;
 import org.gradle.internal.impldep.org.apache.commons.lang.builder.ToStringStyle;
 
@@ -40,6 +41,10 @@ public class MappingVersion {
         return mapping;
     }
 
+    public String asMavenArtifactName() {
+        return "mapping." + provider + ":" + channel + ":" + version + ":" + mapping + "@srg";
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
@@ -51,43 +56,57 @@ public class MappingVersion {
                 .toString();
     }
 
+    public static MappingVersion fromMavenArtifactIdentifier(ArtifactIdentifier identifier, String mcVersion) {
+        String group = identifier.getModuleVersionIdentifier().getGroup();
+        if (!group.startsWith("mapping.") || group.indexOf('.') != group.lastIndexOf('.') || !"srg".equals(identifier.getExtension())) {
+            return null;
+        }
+        return new MappingVersion(
+                group.substring(group.indexOf('.') + 1),
+                identifier.getModuleVersionIdentifier().getName(),
+                identifier.getModuleVersionIdentifier().getVersion(),
+                mcVersion,
+                identifier.getClassifier()
+        );
+    }
+
     public static MappingVersion lazy(Supplier<MappingVersion> supplier) {
         return new MappingVersion(null, null, null, null, null) {
             private MappingVersion parent;
 
             @Override
             public String getProvider() {
-                if(parent == null) parent = supplier.get();
+                if (parent == null) parent = supplier.get();
                 return parent.getProvider();
             }
 
             @Override
             public String getChannel() {
-                if(parent == null) parent = supplier.get();
+                if (parent == null) parent = supplier.get();
                 return parent.getChannel();
             }
 
             @Override
             public String getVersion() {
-                if(parent == null) parent = supplier.get();
+                if (parent == null) parent = supplier.get();
                 return parent.getVersion();
             }
 
             @Override
             public String getMCVersion() {
-                if(parent == null) parent = supplier.get();
+                if (parent == null) parent = supplier.get();
                 return parent.getMCVersion();
             }
 
             @Override
             public String getMapping() {
-                if(parent == null) parent = supplier.get();
+                if (parent == null) parent = supplier.get();
                 return parent.getMapping();
             }
 
             @Override
             public String toString() {
-                if(parent == null) parent = supplier.get();
+                if (parent == null) parent = supplier.get();
                 return parent.toString();
             }
         };

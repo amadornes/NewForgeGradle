@@ -66,7 +66,6 @@ public class Util {
         cfg.getDependencies().add(dependency);
         Set<File> files = cfg.resolve();
         project.getConfigurations().remove(cfg);
-        counter.decrementAndGet();
         return files;
     }
 
