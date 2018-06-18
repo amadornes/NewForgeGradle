@@ -40,9 +40,11 @@ public class Remapper {
     public static Pair<IOSupplier<byte[]>, HashValue> lazyRemapBytes(DependencyResolver dependencyResolver, MappingVersion mapping, File file) {
         Pair<IOSupplier<File>, HashValue> tmp = lazyRemapTmp(dependencyResolver, mapping, file);
         return Pair.of(() -> {
-            FileInputStream fis = new FileInputStream(tmp.getLeft().get());
+            File tmpFile = tmp.getLeft().get();
+            FileInputStream fis = new FileInputStream(tmpFile);
             byte[] bytes = IOUtils.toByteArray(fis);
             fis.close();
+            tmpFile.delete();
             return bytes;
         }, tmp.getRight());
     }

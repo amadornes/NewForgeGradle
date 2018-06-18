@@ -16,6 +16,7 @@ import org.gradle.internal.impldep.org.apache.commons.lang.ArrayUtils;
 import org.gradle.internal.os.OperatingSystem;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -36,6 +37,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 public class Util {
 
@@ -138,9 +141,30 @@ public class Util {
      * Remaps a file using SpecialSource and the specified remapper supplier.
      */
     public static void applySpecialSource(File input, File output, IOFunction<Jar, JarRemapper> remapperSupplier) throws IOException {
+        File tmp = File.createTempFile("ss_tmp", null);
+
         Jar inputJar = Jar.init(input);
-        remapperSupplier.apply(inputJar).remapJar(inputJar, output);
+        remapperSupplier.apply(inputJar).remapJar(inputJar, tmp);
         inputJar.close();
+
+        // TODO: Find a more elegant solution to keep/reset entry modification times
+        // We need to do this because by default SS sets them to the current time
+        // and that changes the hash of the file, which in turn makes gradle create
+        // one extra copy of the remapped jar every time it's requested.
+        ZipInputStream in = new ZipInputStream(new FileInputStream(tmp));
+        ZipOutputStream out = new ZipOutputStream(new FileOutputStream(output));
+        ZipEntry entry;
+        while((entry = in.getNextEntry()) != null) {
+            entry.setTime(0);
+            entry.setCreationTime(entry.getLastModifiedTime());
+            entry.setLastAccessTime(entry.getLastModifiedTime());
+            out.putNextEntry(entry);
+            IOUtils.copyLarge(in, out, 0, entry.getSize());
+        }
+        out.close();
+        in.close();
+
+        tmp.delete();
     }
 
     /**

@@ -83,7 +83,7 @@ public class RemappingRepo {
 
             MappingVersion mapping = new MappingVersion(provider, channel, version, mcVersion, mappingName);
             Pair<IOSupplier<byte[]>, HashValue> remapped = Remapper.lazyRemapBytes(dependencyResolver, mapping, files.iterator().next());
-            return () -> StreamedResource.ofByteSupplier(remapped.getLeft());
+            return () -> StreamedResource.ofByteSupplier(remapped.getLeft()).withHash(remapped.getRight());
         }
 
         private IOSupplier<StreamedResource> fixPOM(File pomFile, String group) throws IOException, SAXException, ParserConfigurationException, TransformerException {
